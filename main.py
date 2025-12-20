@@ -42,14 +42,14 @@ def edit_flask_routes(new_code: str):
 
 @app.route('/api/tables')
 def list_tables():
-    """Liste toutes les 19 tables Supabase"""
+    """Liste toutes les tables Supabase"""
     try:
-        # Liste complète des 19 tables du schéma public
+        # Liste complète de toutes les tables du schéma public
         all_tables = [
-            'avis', 'catégories', 'confirmations_ventes', 'pays', 'coursiers',
-            'livraisons', 'commandements_historiques', 'historique_total', 'images_produits',
-            'molo_molo_payments', 'notifications', 'ordres', 'parraInages', 'produits',
-            'profils', 'régions', 'vendeurs', 'suivi_temps_réel', 'super_surveillance'
+            'avis', 'categories', 'confirmations_ventes', 'Articles récents', 'profils publics',
+            'pays', 'coursiers', 'livraisons', 'régions publiques', 'public.molo_molo_paym',
+            'commandements_historiques', 'historique_total', 'images_produits', 'molo_molo_payments',
+            'notifications', 'régions', 'produits', 'parrainages', 'ordres', 'suivi_temps_réel', 'super_surveillance'
         ]
         
         tables_found = []
