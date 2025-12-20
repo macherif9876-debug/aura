@@ -3,3 +3,8 @@ python-dotenv
 flet
 flask
 mcp
+flask
+flet
+mcp
+python-dotenv
+supabase

@@ -25,9 +25,28 @@ SUPABASE_URL = "https://lgkppbnfxqpmmszphztz.supabase.co"
 
 [[ports]]
 localPort = 3000
-externalPort = 80
+externalPort = 3000
 
-[[ports]]
-localPort = 5000
-externalPort = 8000
-exposeLocalhost = true
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask App"
+
+[[workflows.workflow]]
+name = "Flask App"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+waitForPort = 3000
+
+[workflows.workflow.metadata]
+outputType = "console"
