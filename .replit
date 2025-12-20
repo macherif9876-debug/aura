@@ -1,0 +1,33 @@
+entrypoint = "main.py"
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-25_05"
+
+[unitTest]
+language = "python3"
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix"]
+
+[deployment]
+run = ["python3", "main.py"]
+deploymentTarget = "cloudrun"
+
+[agent]
+expertMode = true
+
+[userenv]
+
+[userenv.shared]
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxna3BwYm5meHFwbW1zenBoenR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNjMxNTgsImV4cCI6MjA4MDkzOTE1OH0.RdAorz9nFpOeSCi6sE0zc1GdO6RnznHuz4km7A1qjEI"
+SUPABASE_URL = "https://lgkppbnfxqpmmszphztz.supabase.co"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[[ports]]
+localPort = 5000
+externalPort = 8000
+exposeLocalhost = true

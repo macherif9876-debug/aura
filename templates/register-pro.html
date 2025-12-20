@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Aura Pro - Inscription Partenaire</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f5f5f5; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h2 { color: #28a745; text-align: center; }
+        .subtitle { color: #666; font-size: 14px; text-align: center; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .hidden { display: none; }
+        .preview-img { width: 100%; max-height: 150px; object-fit: contain; margin-top: 10px; border: 1px dashed #28a745; border-radius: 6px; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Aura Pro</h2>
+        <p class="subtitle">Espace Partenaire - Inscription Rapide</p>
+        
+        <div id="step1">
+            <input type="text" id="prenom" placeholder="Prénom" required>
+            <input type="text" id="nom" placeholder="Nom" required>
+            <input type="email" id="email" placeholder="Email (Lecture seule)" readonly>
+            <input type="tel" id="tel" placeholder="Numéro de téléphone" required>
+            <input type="date" id="dob" required>
+            <select id="sexe">
+                <option value="">Sexe</option>
+                <option value="M">Masculin</option>
+                <option value="F">Féminin</option>
+            </select>
+            <input type="password" id="pass" placeholder="Créer votre mot de passe">
+            <button onclick="next(2)">Suivant : Localisation</button>
+        </div>
+
+        <div id="step2" class="hidden">
+            <select id="pays" onchange="updateRegions()">
+                <option value="">Pays de résidence</option>
+                <option value="Sénégal">Sénégal</option>
+                <option value="Guinée">Guinée</option>
+            </select>
+            <select id="region">
+                <option value="">Région / Commune</option>
+            </select>
+            <button onclick="next(3)">Suivant : Sécurité</button>
+        </div>
+
+        <div id="step3" class="hidden">
+            <p style="font-size: 13px;">1. Photo de votre Carte d'Identité :</p>
+            <input type="file" id="cni_file" accept="image/*" capture="environment" onchange="previewImage(event, 'preview_cni')">
+            <img id="preview_cni" class="preview-img hidden">
+            
+            <p style="font-size: 13px; margin-top: 15px;">2. Selfie avec votre Carte :</p>
+            <input type="file" id="selfie_file" accept="image/*" capture="user" onchange="previewImage(event, 'preview_selfie')">
+            <img id="preview_selfie" class="preview-img hidden">
+            
+            <button onclick="finishRegistration()">Activer mon compte et accéder à Aura</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        // Configuration Supabase (à remplir avec tes clés)
+        const SUPABASE_URL = "https://votre-projet.supabase.co";
+        const SUPABASE_KEY = "votre-cle-anon";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const regionsData = {
+            "Sénégal": ["Dakar", "Thiès", "Saint-Louis", "Ziguinchor"],
+            "Guinée": ["Conakry", "Labé", "Kankan", "Kindia"]
+        };
+
+        function next(s) {
+            document.querySelectorAll('[id^="step"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('step' + s).classList.remove('hidden');
+        }
+
+        function updateRegions() {
+            const p = document.getElementById('pays').value;
+            const r = document.getElementById('region');
+            r.innerHTML = '<option value="">Région / Commune</option>';
+            if(regionsData[p]) regionsData[p].forEach(val => {
+                let opt = document.createElement('option'); opt.value = val; opt.innerText = val; r.appendChild(opt);
+            });
+        }
+
+        function previewImage(event, imgId) {
+            const reader = new FileReader();
+            reader.onload = () => { 
+                const img = document.getElementById(imgId); 
+                img.src = reader.result; 
+                img.classList.remove('hidden'); 
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        async function finishRegistration() {
+            const email = document.getElementById('email').value;
+            
+            alert("Bienvenue sur Aura ! Votre compte est activé. Notez que vos documents seront vérifiés par notre équipe sous 24h.");
+            
+            // Redirection immédiate vers le tableau de bord pro
+            window.location.href = "/dashboard-pro";
+        }
+
+        // Récupération de l'email depuis l'URL de ton lien WhatsApp
+        document.getElementById('email').value = new URLSearchParams(window.location.search).get('email') || "";
+    </script>
+</body>
+</html>
