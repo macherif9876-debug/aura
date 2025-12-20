@@ -7,9 +7,13 @@ from mcp.server.fastmcp import FastMCP
 # --- CONFIGURATION INITIALE ---
 app = Flask(__name__)
 
-# Remplace par tes vraies clés (Utilise les Secrets de Replit !)
-SUPABASE_URL = "https://votre-projet.supabase.co"
-SUPABASE_KEY = "votre-cle-anon"
+# Charge les clés Supabase depuis les secrets Replit
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("❌ Les variables SUPABASE_URL et SUPABASE_KEY ne sont pas configurées !")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- CONFIGURATION DU SERVEUR MCP (Mon accès) ---
@@ -35,6 +39,17 @@ def edit_flask_routes(new_code: str):
     return "✅ Routes mises à jour. Redémarrez le serveur."
 
 # --- ROUTES FLASK EXISTANTES ---
+
+@app.route('/api/tables')
+def list_tables():
+    """Liste toutes les tables Supabase et leurs colonnes"""
+    try:
+        # Récupère le schéma PostgreSQL pour voir les tables
+        response = supabase.table('information_schema.tables').select('table_name').eq('table_schema', 'public').execute()
+        tables = [t['table_name'] for t in response.data]
+        return jsonify({"tables": tables, "status": "success"})
+    except Exception as e:
+        return jsonify({"error": str(e), "status": "failed"}), 400
 
 @app.route('/')
 def login_page():
