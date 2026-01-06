@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-[#F8FAFC] min-h-screen pb-24">
+    
+    <div id="main-grid" class="px-6 pt-10 space-y-8 transition-all duration-500">
+        <h2 class="text-3xl font-black text-[var(--primary-blue)] italic uppercase">Rayons</h2>
+
+        <div class="grid grid-cols-2 gap-4">
+            {% set categories = [
+                ('📱','téléphones et ordinateurs','tech'), ('👗','habits pour femmes','mode_f'), 
+                ('👕','habits pour hommes','mode_h'), ('🛋️','meubles et décoration','deco'), 
+                ('🍳','machines pour la maison','machine'), ('💄','maquillage et parfums','soin'), 
+                ('👶','affaires pour bébés et enfants','bebe'), ('⚽','affaires de sport et voyage','sport'), 
+                ('🔧','pièces pour voitures et motos','auto'), ('🔨','matériel de travail et outils','pro'), 
+                ('⌚','bijoux, sacs et montres','bijoux')
+            ] %}
+
+            {% for emoji, name, slug in categories %}
+            <div onclick="showCategory('{{ slug }}', '{{ name }}')" 
+                 class="relative cursor-pointer group bg-white rounded-[35px] p-6 shadow-sm border border-slate-50 transition-all hover:shadow-xl active:scale-90 aura-category-card {% if loop.index % 3 == 0 %} col-span-2 h-32 {% else %} h-44 {% endif %}">
+                <div class="flex flex-col justify-between h-full">
+                    <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-xl">{{ emoji }}</div>
+                    <span class="block font-black text-[10px] uppercase text-slate-800 leading-tight">{{ name }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="category-view" class="hidden opacity-0 transition-all duration-500 transform translate-y-10">
+        <div class="relative w-full aspect-video overflow-hidden rounded-b-[50px] shadow-2xl bg-slate-900">
+            <img id="cat-banner-img" src="" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30"></div>
+            
+            <div class="absolute top-6 right-6 flex flex-col items-end gap-2">
+                <div class="bg-white/10 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/20">
+                    <p id="aura-comment" class="text-[9px] text-white font-black italic text-right"></p>
+                </div>
+                <div class="bg-[var(--gold)] px-3 py-1 rounded-lg"><span class="text-[8px] font-black text-black tracking-widest uppercase">AURA OFFICIEL</span></div>
+            </div>
+
+            <button onclick="hideCategory()" class="absolute top-6 left-6 w-12 h-12 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-chevron-left"></i></button>
+
+            <div class="absolute bottom-10 left-8">
+                <h2 id="cat-title" class="text-3xl font-black text-white italic tracking-tighter uppercase leading-none"></h2>
+            </div>
+        </div>
+        <div id="category-products" class="px-6 mt-12 grid grid-cols-2 gap-4"></div>
+    </div>
+</div>
+
+<script>
+    const auraUniverse = {
+        'tech': { img: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1200&q=80', msg: '"AURA : Le meilleur des smartphones et ordinateurs high-tech."' },
+        'mode_f': { img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80', msg: '"Élégance féminine sélectionnée par AURA."' },
+        'mode_h': { img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80', msg: '"Le vestiaire masculin idéal validé par AURA."' },
+        'deco': { img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80', msg: '"Meubles et décoration signés AURA."' },
+        'machine': { img: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80', msg: '"Frigos et gazinières : AURA équipe votre maison."' },
+        'soin': { img: 'https://images.unsplash.com/photo-1596462502278-27bfad450216?auto=format&fit=crop&w=1200&q=80', msg: '"Parfums et maquillages exclusifs AURA."' },
+        'bebe': { img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=1200&q=80', msg: '"Le confort de vos enfants, une priorité pour AURA."' },
+        'sport': { img: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80', msg: '"Matériel de sport de qualité AURA."' },
+        'auto': { img: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=80', msg: '"Pièces détachées : AURA prend soin de votre véhicule."' },
+        'pro': { img: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1200&q=80', msg: '"Outils robustes sélectionnés par AURA."' },
+        'bijoux': { img: 'https://images.unsplash.com/photo-1535303311164-664fc9ec6532?auto=format&fit=crop&w=1200&q=80', msg: '"Sacs, montres et bijoux certifiés AURA."' }
+    };
+
+    function showCategory(slug, name) {
+        const grid = document.getElementById('main-grid');
+        const view = document.getElementById('category-view');
+        const data = auraUniverse[slug];
+
+        document.getElementById('cat-banner-img').src = data.img;
+        document.getElementById('cat-title').innerText = name;
+        document.getElementById('aura-comment').innerText = data.msg;
+
+        grid.classList.add('hidden');
+        view.classList.remove('hidden');
+        setTimeout(() => { view.classList.remove('opacity-0', 'translate-y-10'); view.classList.add('opacity-100', 'translate-y-0'); }, 50);
+        window.scrollTo(0, 0);
+    }
+
+    function hideCategory() {
+        const grid = document.getElementById('main-grid');
+        const view = document.getElementById('category-view');
+        view.classList.add('opacity-0', 'translate-y-10');
+        setTimeout(() => { view.classList.add('hidden'); grid.classList.remove('hidden'); }, 300);
+    }
+
+    // GESTION DU CLIC DEPUIS L'ACCUEIL
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openSlug = urlParams.get('open');
+        if (openSlug) {
+            const names = { 'tech': 'téléphones et ordinateurs', 'mode_f': 'habits pour femmes', 'mode_h': 'habits pour hommes', 'deco': 'meubles et décoration', 'machine': 'machines pour la maison', 'soin': 'maquillage et parfums', 'bebe': 'affaires pour bébés et enfants', 'sport': 'affaires de sport et voyage', 'auto': 'pièces pour voitures et motos', 'pro': 'matériel de travail et outils', 'bijoux': 'bijoux, sacs et montres' };
+            if (names[openSlug]) showCategory(openSlug, names[openSlug]);
+        }
+    };
+</script>
+{% endblock %}

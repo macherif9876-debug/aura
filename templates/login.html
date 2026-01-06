@@ -2,58 +2,79 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Aura - Inscription Sécurisée</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA - Connexion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { color: #000; text-align: center; margin-bottom: 10px; }
-        .welcome-msg { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #218838; }
-        .hidden { display: none; }
+        @keyframes reflect { 0% { left: -100%; } 100% { left: 150%; } }
+        
+        .aura-logo-light {
+            position: relative;
+            display: inline-block;
+            font-size: 3.5rem;
+            font-weight: 900;
+            font-style: italic;
+            color: #1a1a1a;
+            padding: 10px 40px;
+            background: rgba(0, 0, 0, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            border: 1px solid rgba(0,0,0,0.08);
+            overflow: hidden;
+            letter-spacing: -3px;
+        }
+
+        .aura-logo-light::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            transform: skewX(-25deg);
+            animation: reflect 3s infinite;
+        }
+
+        .input-premium {
+            background: #f8fafc;
+            border: 2px solid #f1f5f9;
+            transition: all 0.3s ease;
+        }
+
+        .input-premium:focus {
+            background: #ffffff;
+            border-color: #000000;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
-<body>
-    <div class="card">
-        <h2>Aura</h2>
-        <p class="welcome-msg">Ravi de vous revoir !<br>Préparez-vous à vivre une expérience de commerce fluide et flexible.</p>
-        
-        <div id="step1">
-            <input type="text" id="prenom" placeholder="Prénom" required>
-            <input type="text" id="nom" placeholder="Nom" required>
-            <input type="email" id="email" placeholder="Adresse e-mail" required>
-            <input type="tel" id="tel" placeholder="Numéro de téléphone" required>
-            <input type="password" id="pass" placeholder="Mot de passe" required>
-            <button onclick="goToStep2()">Suivant : Localisation</button>
+<body class="bg-[#ffffff] min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-md text-center">
+        <div class="mb-12">
+            <div class="aura-logo-light">AURA</div>
+            <p class="text-slate-400 font-bold text-[10px] uppercase tracking-[4px] mt-4">Luxe & Proximité</p>
         </div>
 
-        <div id="step2" class="hidden">
-            <p>Filtrage par résidence :</p>
-            <select id="pays" onchange="updateRegions()">
-                <option value="">Sélectionnez votre pays</option>
-                <option value="Guinée">Guinée</option>
-                <option value="Sénégal">Sénégal</option>
-            </select>
-            <select id="region">
-                <option value="">Sélectionnez votre région</option>
-            </select>
-            <button onclick="submitForm()">Finaliser mon inscription</button>
-            <p style="text-align:center; font-size: 12px; margin-top:10px;"><a href="#" onclick="goToStep1()" style="color: #28a745;">Retour</a></p>
+        {% if error %}
+        <div class="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold border border-red-100">
+            {{ error }}
         </div>
+        {% endif %}
+
+        <form method="POST" class="space-y-4">
+            <input type="email" name="email" placeholder="Votre email" required 
+                   class="w-full p-5 rounded-2xl outline-none text-black font-medium input-premium">
+            
+            <input type="password" name="password" placeholder="Mot de passe" required 
+                   class="w-full p-5 rounded-2xl outline-none text-black font-medium input-premium">
+            
+            <button type="submit" class="w-full py-5 bg-black text-white rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95 transition-all mt-4">
+                Se connecter
+            </button>
+        </form>
+
+        <p class="mt-10 text-slate-400 font-medium text-sm">
+            Nouveau chez AURA ? <a href="/signup" class="text-black font-black underline ml-1">Créer un compte</a>
+        </p>
     </div>
-
-    <script>
-        const regions = { "Guinée": ["Conakry", "Labé"], "Sénégal": ["Dakar", "Saint-Louis"] };
-        function goToStep2() { document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); }
-        function goToStep1() { document.getElementById('step2').classList.add('hidden'); document.getElementById('step1').classList.remove('hidden'); }
-        function updateRegions() {
-            const pays = document.getElementById('pays').value;
-            const select = document.getElementById('region');
-            select.innerHTML = '<option value="">Sélectionnez votre région</option>';
-            if(regions[pays]) { regions[pays].forEach(r => { let o = document.createElement('option'); o.value = r; o.innerText = r; select.appendChild(o); }); }
-        }
-        function submitForm() { alert("Inscription Aura envoyée ! Vérifiez votre e-mail."); }
-    </script>
 </body>
 </html>

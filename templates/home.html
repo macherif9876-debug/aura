@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --gold: #D4AF37;
+        --primary-blue: #0A192F;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    
+    .format-youtube {
+        aspect-ratio: 16/9;
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        width: 88vw;
+        max-width: 420px;
+        flex-shrink: 0;
+    }
+
+    .banner-img {
+        width: 100%; 
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .banner-container:active .banner-img { transform: scale(1.05); }
+
+    .overlay-gradient {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 60%;
+        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        pointer-events: none;
+    }
+
+    .product-card {
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+</style>
+
+<div class="pt-4 pb-32 space-y-10 bg-[#F8FAFC]">
+
+    <section>
+        <div class="px-6 mb-3">
+            <h3 class="text-[var(--primary-blue)] font-black text-[11px] uppercase tracking-[3px] opacity-60">Exploration</h3>
+        </div>
+        <div class="flex overflow-x-auto gap-5 px-6 no-scrollbar items-start py-2 snap-x">
+            {% set aura_cats = [('📱','Tech','tech'), ('👗','Mode F','mode_f'), ('👕','Mode H','mode_h'), ('🛋️','Maison','deco'), ('👟','Shoes','sport'), ('💄','Beauté','soin'), ('🎮','Jeux','loisir'), ('🔧','Auto','auto')] %}
+            {% for emoji, name, slug in aura_cats %}
+            <a href="{{ url_for('categories') }}?open={{ slug }}" class="snap-start flex-shrink-0 flex flex-col items-center group w-[60px]">
+                <div class="w-14 h-14 rounded-[18px] bg-white shadow-sm border border-slate-100 flex items-center justify-center text-xl transition-all group-active:scale-95">
+                    {{ emoji }}
+                </div>
+                <span class="text-[9px] font-bold text-slate-500 mt-2 uppercase text-center">{{ name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="pl-6">
+        <h3 class="text-xl font-black mb-4 text-slate-800 tracking-tighter italic">Nouveautés</h3>
+        <div class="flex overflow-x-auto gap-4 no-scrollbar pr-6 snap-x">
+            {% for b in banners if b.position >= 1 and b.position <= 10 %}
+            <div class="snap-center format-youtube shadow-lg banner-container">
+                <img src="{{ b.image_url }}" class="banner-img" loading="lazy">
+                <div class="overlay-gradient"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="space-y-6">
+        <div class="px-6 flex justify-between items-center">
+            <h3 class="text-lg font-black text-slate-900 tracking-tight">Sélection pour vous</h3>
+            <span class="text-[var(--gold)] text-[10px] font-bold animate-pulse">LIVE FEED</span>
+        </div>
+
+        <div class="flex overflow-x-auto gap-4 px-6 no-scrollbar snap-x">
+            {% for produit in produits[:50] %}
+            <div class="snap-start w-[160px] product-card bg-white rounded-[24px] p-2 shadow-sm border border-slate-50">
+                <div class="h-48 w-full mb-2 overflow-hidden rounded-[20px] bg-slate-100">
+                    <img src="{{ produit.image_url }}" class="w-full h-full object-cover">
+                </div>
+                <h4 class="font-bold text-[11px] text-slate-800 truncate px-1">{{ produit.nom_produit }}</h4>
+                <p class="text-[var(--primary-blue)] font-black text-sm px-1">{{ "{:,.0f}".format(produit.prix).replace(',', ' ') }} <span class="text-[8px]">GNF</span></p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="pl-6 py-4 bg-slate-900/5">
+        <h3 class="text-xl font-black mb-4 text-slate-800 tracking-tighter">Événements</h3>
+        <div class="flex overflow-x-auto gap-4 no-scrollbar pr-6 snap-x">
+            {% for b in banners if b.position >= 11 and b.position <= 20 %}
+            <div class="snap-center format-youtube shadow-lg banner-container">
+                <img src="{{ b.image_url }}" class="banner-img" loading="lazy">
+                <div class="overlay-gradient"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="px-6">
+        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[4px] mb-6 text-center">Continuer l'exploration</h3>
+        <div class="grid grid-cols-2 gap-4">
+            {% for produit in produits[50:150] %}
+            <div class="bg-white rounded-[28px] p-2 shadow-sm border border-slate-100 overflow-hidden">
+                <div class="h-52 w-full mb-2 overflow-hidden rounded-[22px] relative">
+                    <img src="{{ produit.image_url }}" class="w-full h-full object-cover">
+                    <div class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-[8px] font-black uppercase">New</div>
+                </div>
+                <div class="px-2 pb-2">
+                    <h4 class="font-bold text-xs text-slate-800 truncate">{{ produit.nom_produit }}</h4>
+                    <div class="flex justify-between items-center mt-1">
+                        <p class="text-[var(--primary-blue)] font-black text-sm">{{ "{:,.0f}".format(produit.prix).replace(',', ' ') }}</p>
+                        <div class="w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center text-white text-[10px]">+</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="pl-6 pt-10 border-t border-slate-200">
+        <h3 class="text-sm font-black mb-4 text-slate-400 uppercase tracking-widest">Offres Spéciales</h3>
+        <div class="flex overflow-x-auto gap-4 no-scrollbar pr-6 snap-x">
+            {% for b in banners if b.position >= 21 and b.position <= 30 %}
+            <div class="snap-center format-youtube shadow-lg banner-container opacity-90 hover:opacity-100 transition-opacity">
+                <img src="{{ b.image_url }}" class="banner-img" loading="lazy">
+                <div class="overlay-gradient"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+</div>
+{% endblock %}

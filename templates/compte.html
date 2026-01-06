@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    /* Design System Aura 2025 */
+    .account-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    .menu-item {
+        background: white; border-radius: 24px; padding: 1.5rem;
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; text-align: center; border: 1px solid #f1f5f9;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); cursor: pointer;
+    }
+    .menu-item:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: #000; }
+    .menu-item i { font-size: 1.5rem; margin-bottom: 0.75rem; color: #64748b; }
+    .menu-item span { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1e293b; }
+
+    .user-header { background: black; border-radius: 35px; padding: 2rem; color: white; margin-bottom: 2rem; display: flex; align-items: center; gap: 1.5rem; }
+    .avatar-circle { width: 70px; height: 70px; background: white; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; font-style: italic; }
+
+    .content-section { display: none; animation: fadeIn 0.4s ease-out; }
+    .content-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .admin-card { background: linear-gradient(135deg, #1e293b, #000); border-radius: 30px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.1); }
+</style>
+
+<div class="bg-[#F8FAFC] min-h-screen pb-32 pt-10 px-6">
+    <div class="max-w-md mx-auto">
+        
+        <div class="user-header shadow-2xl">
+            <div class="avatar-circle">{{ user.prenom[0] if user.prenom else 'A' }}</div>
+            <div>
+                <h2 class="text-2xl font-black italic">{{ user.prenom }} {{ user.nom }}</h2>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{{ user.email }}</p>
+                <div class="mt-2 inline-block px-3 py-1 bg-white/10 rounded-full text-[9px] font-black uppercase">
+                   📍 {{ user.region.nom_region if user.region and user.region.nom_region else 'Zone Aura' }}
+                </div>
+            </div>
+        </div>
+
+        {% if user.role in ['super_admin', 'commercant', 'autorise_commercant'] %}
+        <div class="admin-card text-white shadow-xl">
+            <h3 class="text-[9px] font-black uppercase tracking-[3px] mb-4 opacity-60">Espace Privilégié</h3>
+            <div class="space-y-3">
+                {% if user.role == 'super_admin' %}
+                <a href="/admin/dashboard" class="flex items-center justify-between bg-blue-600/20 p-4 rounded-2xl border border-blue-500/30 hover:bg-blue-600 transition-all">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Gérer l'Application</span>
+                    <i class="fa-solid fa-gear"></i>
+                </a>
+                {% endif %}
+
+                {% if user.role == 'commercant' or user.role == 'super_admin' %}
+                <a href="/merchant/dashboard" class="flex items-center justify-between bg-green-600/20 p-4 rounded-2xl border border-green-500/30 hover:bg-green-600 transition-all">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Gérer ma Boutique</span>
+                    <i class="fa-solid fa-shop"></i>
+                </a>
+                {% endif %}
+
+                {% if user.role == 'autorise_commercant' %}
+                <a href="/devenir-commercant" class="flex items-center justify-between bg-orange-500 p-4 rounded-2xl text-white font-black hover:scale-[1.02] transition-all">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Finaliser ma Boutique</span>
+                    <i class="fa-solid fa-rocket"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="main-menu">
+            <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-[3px] mb-6 ml-2">Mon Espace Client</h3>
+            <div class="account-grid">
+                <div onclick="showSection('commandes')" class="menu-item"><i class="fa-solid fa-box-open"></i><span>Commandes</span></div>
+                <div onclick="showSection('messages')" class="menu-item"><i class="fa-solid fa-envelope"></i><span>Messages</span></div>
+                <div onclick="showSection('favoris')" class="menu-item"><i class="fa-solid fa-heart"></i><span>Favoris</span></div>
+                <div onclick="showSection('parrainage')" class="menu-item"><i class="fa-solid fa-users-rays"></i><span>Parrainage</span></div>
+                <div onclick="showSection('profil')" class="menu-item"><i class="fa-solid fa-user-gear"></i><span>Profil</span></div>
+                <div onclick="showSection('bons')" class="menu-item"><i class="fa-solid fa-ticket"></i><span>Bons</span></div>
+            </div>
+            <div class="mt-10">
+                <a href="/logout" class="block w-full py-5 bg-red-50 text-red-500 rounded-3xl font-black text-center text-[10px] uppercase tracking-[2px] border border-red-100">Déconnexion</a>
+            </div>
+        </div>
+
+        <div id="sections-container">
+            <div id="section-profil" class="content-section bg-white p-8 rounded-[35px] border border-slate-100 shadow-sm">
+                <button onclick="hideSections()" class="mb-6 text-[10px] font-bold text-slate-400 uppercase"><i class="fa-solid fa-arrow-left mr-2"></i> Retour</button>
+                <h3 class="text-xl font-black mb-6 italic uppercase">Mes Informations</h3>
+                <div class="space-y-4">
+                    <div class="profile-info-box">
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Statut</label>
+                        <p class="font-bold text-blue-600 uppercase text-xs">{{ user.role }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showSection(id) {
+        document.getElementById('main-menu').style.display = 'none';
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById('section-' + id);
+        if (target) { target.classList.add('active'); }
+    }
+    function hideSections() {
+        document.getElementById('main-menu').style.display = 'block';
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    }
+</script>
+{% endblock %}

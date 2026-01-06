@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AURA{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="flex justify-between items-center mb-2">
+            <div class="logo-aura">AURA</div>
+            <div class="flex gap-4 items-center">
+                <button onclick="toggleTheme()" class="text-xl"></button>
+                <div class="text-xl relative inline-flex">
+                    🔔
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                        0
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="search-container-pro">
+            <span class="text-gray-400 mr-2">🔍</span>
+            <input type="text" id="searchInput" placeholder="Rechercher sur AURA..." class="w-full bg-transparent border-none outline-none text-sm">
+        </div>
+    </header>
+
+    <main class="pb-24">
+        {% block content %}{% endblock %}
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item-pro {% if request.path == '/' %}active{% endif %}">
+            <span>🏠</span>
+            Accueil
+        </a>
+        <a href="/categories" class="nav-item-pro {% if request.path == '/categories' %}active{% endif %}">
+            <span>🍔</span>
+            Catégories
+        </a>
+        
+        <a href="/panier" class="nav-item-pro {% if request.path == '/panier' %}active{% endif %}">
+            <div class="relative inline-flex">
+                <span>🛒</span>
+                <span class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                    {{ cart_count if cart_count else 0 }}
+                </span>
+            </div>
+            Panier
+        </a>
+
+        <a href="/compte" class="nav-item-pro {% if request.path == '/compte' %}active{% endif %}">
+            <span>👤</span>
+            Compte
+        </a>
+    </nav>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

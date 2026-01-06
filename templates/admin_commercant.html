@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA - Merchant Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { darkBg: '#0f172a', darkCard: '#1e293b' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .section { display: none; }
+        .section.active { display: block; }
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-white transition-colors duration-300">
+
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-darkCard shadow-2xl transform -translate-x-full sidebar-transition lg:translate-x-0 border-r border-slate-200 dark:border-slate-700">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-10">
+                <h1 class="font-black italic text-xl tracking-tighter text-blue-600">AURA PRO</h1>
+                <button onclick="toggleMenu()" class="lg:hidden"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <nav class="space-y-2">
+                <button onclick="showSection('dashboard')" class="w-full flex items-center p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 font-bold text-sm">
+                    <i class="fa-solid fa-chart-pie mr-3"></i> Tableau de bord
+                </button>
+                <button onclick="showSection('inventory')" class="w-full flex items-center p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm">
+                    <i class="fa-solid fa-box mr-3"></i> Mes Produits
+                </button>
+                <button onclick="showSection('analytics')" class="w-full flex items-center p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm">
+                    <i class="fa-solid fa-arrow-trend-up mr-3"></i> Graphiques
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <div class="lg:ml-64 min-h-screen">
+        <nav class="p-6 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-darkCard/80 backdrop-blur-md sticky top-0 z-40">
+            <button onclick="toggleMenu()" class="lg:hidden text-xl"><i class="fa-solid fa-bars"></i></button>
+            <h2 id="section-title" class="font-black uppercase italic text-sm tracking-widest">Tableau de Bord</h2>
+            
+            <div class="flex items-center gap-4">
+                <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+                <a href="/compte" class="text-[10px] font-black bg-black text-white px-4 py-2 rounded-full uppercase">Quitter</a>
+            </div>
+        </nav>
+
+        <div class="p-6 max-w-5xl mx-auto">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="mb-6 p-4 rounded-2xl text-xs font-black uppercase {% if category == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div id="dashboard" class="section active space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-[30px] border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Chiffre d'Affaire</p>
+                        <p class="text-3xl font-black italic">1.250.000 <span class="text-sm">FCFA</span></p>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-[30px] border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Commandes</p>
+                        <p class="text-3xl font-black italic">42</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-[30px] border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Total Produits</p>
+                        <p class="text-3xl font-black italic">{{ produits|length }}</p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-darkCard p-8 rounded-[40px] border border-slate-100 dark:border-slate-700">
+                    <h2 class="text-lg font-black uppercase italic mb-6">Ajouter un nouveau produit</h2>
+                    <form action="/merchant/add_product" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-4">
+                            <input type="text" name="nom" placeholder="Nom du produit" required class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
+                            <input type="number" name="prix" placeholder="Prix (FCFA)" required class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
+                            <input type="number" name="stock" placeholder="Quantité en Stock" required class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
+                        </div>
+                        <div class="space-y-4">
+                            <select name="categorie" class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
+                                <option>Mode</option><option>Electronique</option><option>Beauté</option>
+                            </select>
+                            <textarea name="description" placeholder="Description courte..." rows="3" class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500"></textarea>
+                        </div>
+                        <button type="submit" class="md:col-span-2 bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Mettre en vente</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="inventory" class="section">
+                <div class="bg-white dark:bg-darkCard p-8 rounded-[40px] border border-slate-100 dark:border-slate-700">
+                    <h2 class="text-lg font-black uppercase italic mb-8">Gestion des stocks</h2>
+                    <div class="space-y-4">
+                        {% if produits %}
+                            {% for p in produits %}
+                            <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-700">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-blue-600/10 text-blue-600 rounded-2xl flex items-center justify-center font-black">#ID</div>
+                                    <div>
+                                        <p class="text-xs font-black uppercase">{{ p.nom }}</p>
+                                        <p class="text-[10px] text-slate-400 font-bold">STK: {{ p.stock or '0' }} | {{ p.prix }} FCFA</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <a href="/merchant/edit/{{p.id}}" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm"><i class="fa-solid fa-pen-to-square text-blue-500"></i></a>
+                                    <a href="/merchant/delete_product/{{p.id}}" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm"><i class="fa-solid fa-trash text-red-500"></i></a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center py-10 opacity-50 italic">Aucun produit en ligne.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div id="analytics" class="section">
+                <div class="bg-white dark:bg-darkCard p-8 rounded-[40px] border border-slate-100 dark:border-slate-700">
+                    <h2 class="text-lg font-black uppercase italic mb-8">Performance Commerciale</h2>
+                    <canvas id="salesChart" height="150"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // DARK MODE LOGIC
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (document.body.classList.contains('dark')) {
+                document.body.classList.remove('dark');
+                icon.className = 'fa-solid fa-moon';
+                localStorage.theme = 'light';
+            } else {
+                document.body.classList.add('dark');
+                icon.className = 'fa-solid fa-sun';
+                localStorage.theme = 'dark';
+            }
+        }
+
+        // NAVIGATION LOGIC
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('section-title').innerText = id.replace('dashboard', 'Tableau de bord');
+            if(window.innerWidth < 1024) toggleMenu();
+        }
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        // CHART LOGIC
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                datasets: [{
+                    label: 'Ventes FCFA',
+                    data: [12000, 19000, 3000, 50000, 20000, 30000, 45000],
+                    borderColor: '#2563eb',
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)'
+                }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+
+        // Load Theme on start
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark');
+        }
+    </script>
+</body>
+</html>
