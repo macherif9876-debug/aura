@@ -1,13 +1,8 @@
+gunicorn
+flask
 supabase
 python-dotenv
-flet
-flask
-mcp
-flask
-flet
-mcp
-python-dotenv
-supabase
 cloudinary
 rembg
 requests
+mcp
