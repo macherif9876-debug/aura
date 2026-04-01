@@ -1782,18 +1782,10 @@ async function envoyer() {
 
 
 # ==============================================================================
-# 🚀 DÉCLENCHEUR GITHUB & LANCEMENT DE L'APPLICATION
+# 🚀 LANCEMENT DE L'APPLICATION
 # ==============================================================================
 
 if __name__ == '__main__':
-    # On importe ton fichier de sauvegarde créé à l'étape précédente
-    try:
-        from save_to_github import push_to_github
-        # On lance la sauvegarde vers ton compte GitHub avant que le serveur s'allume !
-        push_to_github()
-    except Exception as e:
-        print(f"⚠️ Impossible d'exécuter la sauvegarde automatique : {e}")
-
     # Lancement normal du serveur Flask de Replit
     PORT = int(os.getenv("PORT", 3000))
     app.run(host='0.0.0.0', port=PORT, debug=True)
