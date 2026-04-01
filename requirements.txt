@@ -3,6 +3,6 @@ flask
 supabase
 python-dotenv
 cloudinary
-rembg
 requests
 mcp
+Pillow
