@@ -1,104 +1,740 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA - Inscription</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @keyframes reflect { 0% { left: -100%; } 100% { left: 150%; } }
-        .aura-logo-small {
-            position: relative; display: inline-block;
-            font-size: 2.2rem; font-weight: 900; font-style: italic;
-            color: #1a1a1a; padding: 5px 20px;
-            background: rgba(0, 0, 0, 0.03); backdrop-filter: blur(10px);
-            border-radius: 15px; border: 1px solid rgba(0,0,0,0.05);
-            overflow: hidden; letter-spacing: -2px;
-        }
-        .aura-logo-small::after {
-            content: ''; position: absolute; top: 0; left: -100%;
-            width: 60%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
-            transform: skewX(-25deg); animation: reflect 3.5s infinite;
-        }
-        .field-light { background: #f8fafc; border: 1px solid #e2e8f0; }
-        .field-light:focus { border-color: #000; background: white; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inscription — Aura Markeplay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ===== VARIABLES & RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --or:        #C9A84C;
+      --or-clair:  #E8C97A;
+      --noir:      #0A0A0A;
+      --surface:   #111111;
+      --card:      #161616;
+      --bordure:   #272727;
+      --texte:     #E8E8E8;
+      --gris:      #888888;
+      --erreur:    #E05C5C;
+      --succes:    #4CAF72;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--noir);
+      color: var(--texte);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ===== FOND DÉCORATIF ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      right: -20%;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%);
+      pointer-events: none;
+      animation: pulse-bg 8s ease-in-out infinite;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      left: -15%;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    @keyframes pulse-bg {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.08); opacity: 0.7; }
+    }
+
+    /* ===== CARTE PRINCIPALE ===== */
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card);
+      border: 1px solid var(--bordure);
+      border-radius: 4px;
+      padding: 3rem 2.8rem;
+      position: relative;
+      z-index: 1;
+      animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Ligne dorée en haut de la carte */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--or), transparent);
+    }
+
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== EN-TÊTE ===== */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.2rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--or);
+      text-transform: uppercase;
+      line-height: 1;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo span {
+      display: block;
+      font-size: 0.7rem;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      color: var(--gris);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .titre {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.45rem;
+      font-weight: 300;
+      color: var(--texte);
+      margin-top: 1.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .sous-titre {
+      font-size: 0.82rem;
+      color: var(--gris);
+      margin-top: 0.35rem;
+    }
+
+    /* ===== FLASH MESSAGES ===== */
+    .flash-list { list-style: none; margin-bottom: 1.5rem; }
+
+    .flash {
+      padding: 0.75rem 1rem;
+      border-radius: 3px;
+      font-size: 0.83rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+      animation: slide-up 0.3s ease both;
+    }
+    .flash.error   { background: rgba(224,92,92,0.1);  border-left: 3px solid var(--erreur);  color: #f0a0a0; }
+    .flash.success { background: rgba(76,175,114,0.1); border-left: 3px solid var(--succes);  color: #90dba8; }
+    .flash-icon { font-size: 1rem; flex-shrink: 0; }
+
+    /* ===== FORMULAIRE ===== */
+    .form { display: flex; flex-direction: column; gap: 1.2rem; }
+
+    /* Rangée de 2 colonnes */
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gris);
+    }
+
+    label .requis { color: var(--or); margin-left: 2px; }
+
+    input, select {
+      background: var(--surface);
+      border: 1px solid var(--bordure);
+      border-radius: 3px;
+      color: var(--texte);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input::placeholder { color: #444; }
+
+    input:focus, select:focus {
+      border-color: var(--or);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+    }
+
+    /* Select personnalisé */
+    .select-wrapper {
+      position: relative;
+    }
+    .select-wrapper::after {
+      content: '▾';
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--or);
+      pointer-events: none;
+      font-size: 0.9rem;
+    }
+    .select-wrapper select { padding-right: 2.5rem; }
+
+    select option { background: #1a1a1a; }
+    select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* Champ téléphone avec indicatif */
+    .tel-group {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 0.6rem;
+    }
+
+    /* Mot de passe avec œil */
+    .password-wrapper {
+      position: relative;
+    }
+    .password-wrapper input { padding-right: 3rem; }
+    .eye-btn {
+      position: absolute;
+      right: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--gris);
+      font-size: 1rem;
+      padding: 0;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+    .eye-btn:hover { color: var(--or); }
+
+    /* Séparateur de section */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gris);
+      margin-top: 0.4rem;
+    }
+    .section-label::before, .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--bordure);
+    }
+
+    /* Indicateur de force du mot de passe */
+    .strength-bar {
+      display: flex;
+      gap: 4px;
+      margin-top: 5px;
+    }
+    .strength-bar span {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--bordure);
+      transition: background 0.3s;
+    }
+    .strength-text {
+      font-size: 0.72rem;
+      color: var(--gris);
+      margin-top: 4px;
+      min-height: 1rem;
+    }
+
+    /* ===== BOUTON PRINCIPAL ===== */
+    .btn-submit {
+      background: linear-gradient(135deg, var(--or) 0%, var(--or-clair) 100%);
+      color: var(--noir);
+      border: none;
+      border-radius: 3px;
+      padding: 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 0.5rem;
+      transition: opacity 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-submit::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.2s;
+    }
+    .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); opacity: 1; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Spinner dans le bouton */
+    .btn-submit .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: var(--noir);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== LIEN CONNEXION ===== */
+    .lien-connexion {
+      text-align: center;
+      font-size: 0.83rem;
+      color: var(--gris);
+      margin-top: 1.5rem;
+    }
+    .lien-connexion a {
+      color: var(--or);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .lien-connexion a:hover { color: var(--or-clair); text-decoration: underline; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 520px) {
+      .card { padding: 2rem 1.4rem; }
+      .row-2 { grid-template-columns: 1fr; }
+      .tel-group { grid-template-columns: 120px 1fr; }
+    }
+  </style>
 </head>
-<body class="bg-white min-h-screen flex items-center justify-center p-6">
-    <div class="w-full max-w-md">
-        <div class="text-center mb-8">
-            <div class="aura-logo-small">AURA</div>
-            <h1 class="text-xl font-black mt-4 text-slate-900">Créez votre profil</h1>
-        </div>
 
-        {% if error %}
-        <div class="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold border border-red-100">
-            {{ error }}
-        </div>
-        {% endif %}
+<body>
 
-        <form method="POST" class="space-y-3">
-            <div class="grid grid-cols-2 gap-3">
-                <input type="text" name="prenom" placeholder="Prénom" required class="w-full p-4 rounded-2xl outline-none field-light transition-all">
-                <input type="text" name="nom" placeholder="Nom" required class="w-full p-4 rounded-2xl outline-none field-light transition-all">
-            </div>
+<div class="card">
 
-            <div class="grid grid-cols-2 gap-3">
-                <select name="pays_id" id="pays_select" required class="w-full p-4 rounded-2xl outline-none field-light transition-all text-slate-500">
-                    <option value="" disabled selected>Pays</option>
-                    {% for p in pays %}
-                        <option value="{{ p.id }}">
-                            {% if 'Sénégal' in p.nom_pays %}🇸🇳 {% elif 'Guinée' in p.nom_pays %}🇬🇳 {% endif %}
-                            {{ p.nom_pays }}
-                        </option>
-                    {% endfor %}
-                </select>
+  <!-- ===== EN-TÊTE ===== -->
+  <div class="header">
+    <a class="logo" href="/">
+      AURA
+      <span>Markeplay</span>
+    </a>
+    <h1 class="titre">Créer un compte</h1>
+    <p class="sous-titre">Rejoignez la plateforme et découvrez des milliers de produits</p>
+  </div>
 
-                <select name="region_id" id="region_select" required class="w-full p-4 rounded-2xl outline-none field-light transition-all text-slate-500">
-                    <option value="" disabled selected>Région</option>
-                    {% for r in regions %}
-                        <option value="{{ r.id }}" data-pays="{{ r.pays_id }}" class="region-option" style="display:none;">
-                            {{ r.nom_region }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
+  <!-- ===== FLASH MESSAGES (depuis Flask) ===== -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for category, message in messages %}
+          <li class="flash {{ category }}">
+            <span class="flash-icon">{% if category == 'error' %}⚠{% else %}✓{% endif %}</span>
+            {{ message }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
 
-            <input type="tel" name="phone" placeholder="Numéro de téléphone" required class="w-full p-4 rounded-2xl outline-none field-light transition-all">
-            <input type="email" name="email" placeholder="Adresse email" required class="w-full p-4 rounded-2xl outline-none field-light transition-all">
-            <input type="password" name="password" placeholder="Mot de passe (8+ caractères)" required class="w-full p-4 rounded-2xl outline-none field-light transition-all">
+  <!-- ===== FORMULAIRE D'INSCRIPTION ===== -->
+  <!--
+    ACTION  → route 'inscription.signup' (Blueprint auth_inscription.py)
+    MÉTHODE → POST
+    Champs  → nom, prenom, email, password, confirm_password,
+               indicatif, telephone, id_pays, id_region
+  -->
+  <form class="form"
+        method="POST"
+        action="{{ url_for('inscription.signup') }}"
+        id="formInscription"
+        novalidate>
 
-            <button type="submit" class="w-full py-5 bg-black text-white rounded-3xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all mt-4">
-                Rejoindre l'expérience
-            </button>
-        </form>
+    <!-- ── SECTION : IDENTITÉ ── -->
+    <div class="section-label">Identité</div>
 
-        <p class="mt-6 text-center text-slate-400 font-medium text-sm">
-            Déjà inscrit ? <a href="/login" class="text-black font-black underline ml-1">Se connecter</a>
-        </p>
+    <!-- Nom & Prénom côte à côte -->
+    <div class="row-2">
+      <div class="field">
+        <label for="nom">Nom <span class="requis">*</span></label>
+        <input type="text"
+               id="nom"
+               name="nom"
+               placeholder="Diallo"
+               value="{{ form_data.get('nom', '') }}"
+               required
+               autocomplete="family-name"/>
+      </div>
+      <div class="field">
+        <label for="prenom">Prénom <span class="requis">*</span></label>
+        <input type="text"
+               id="prenom"
+               name="prenom"
+               placeholder="Moussa"
+               value="{{ form_data.get('prenom', '') }}"
+               required
+               autocomplete="given-name"/>
+      </div>
     </div>
 
-    <script>
-        const paysSelect = document.getElementById('pays_select');
-        const regionSelect = document.getElementById('region_select');
-        const regionOptions = document.querySelectorAll('.region-option');
+    <!-- Email -->
+    <div class="field">
+      <label for="email">Adresse email <span class="requis">*</span></label>
+      <input type="email"
+             id="email"
+             name="email"
+             placeholder="moussa@exemple.com"
+             value="{{ form_data.get('email', '') }}"
+             required
+             autocomplete="email"/>
+    </div>
 
-        paysSelect.addEventListener('change', function() {
-            const selectedPaysId = this.value;
-            
-            // On remet le menu région à zéro
-            regionSelect.value = "";
-            
-            // On cache tout d'abord toutes les régions
-            regionOptions.forEach(opt => {
-                if (opt.getAttribute('data-pays') === selectedPaysId) {
-                    opt.style.display = 'block'; // On affiche si le pays correspond
-                } else {
-                    opt.style.display = 'none'; // On cache sinon
-                }
-            });
-        });
-    </script>
+    <!-- ── SECTION : TÉLÉPHONE ── -->
+    <div class="section-label">Téléphone</div>
+
+    <div class="field">
+      <label for="telephone">Numéro de téléphone <span class="requis">*</span></label>
+      <!--
+        Le groupe contient :
+        - #indicatif  → envoyé comme "indicatif" (ex: +221) — correspond à profile_data["telephone"]
+        - #telephone  → le numéro sans indicatif (ex: 771234567)
+        Le backend concatène : telephone_complet = indicatif + telephone
+      -->
+      <div class="tel-group">
+        <!-- Indicatif pays : name="indicatif" attendu par le backend -->
+        <div class="select-wrapper">
+          <select id="indicatif"
+                  name="indicatif"
+                  required>
+            <option value="">Indicatif</option>
+            <!-- On génère les indicatifs depuis la liste des pays Supabase -->
+            {% for p in pays %}
+              <option value="{{ p.indicatif }}"
+                {% if form_data.get('indicatif') == p.indicatif|string %}selected{% endif %}>
+                {{ p.code_pays }} {{ p.indicatif }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Numéro : name="telephone" attendu par le backend -->
+        <input type="tel"
+               id="telephone"
+               name="telephone"
+               placeholder="77 123 45 67"
+               value="{{ form_data.get('telephone', '') }}"
+               required
+               inputmode="numeric"/>
+      </div>
+    </div>
+
+    <!-- ── SECTION : LOCALISATION ── -->
+    <div class="section-label">Localisation</div>
+
+    <!-- Pays -->
+    <div class="field">
+      <label for="id_pays">Pays</label>
+      <div class="select-wrapper">
+        <select id="id_pays"
+                name="id_pays">
+          <option value="">— Choisir un pays —</option>
+          {% for p in pays %}
+            <option value="{{ p.id }}"
+              {% if form_data.get('id_pays') == p.id|string %}selected{% endif %}>
+              {{ p.nom_pays }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Région (chargée dynamiquement via JS selon le pays) -->
+    <div class="field">
+      <label for="id_region">Région / Ville</label>
+      <div class="select-wrapper">
+        <select id="id_region"
+                name="id_region"
+                disabled>
+          <option value="">— Sélectionnez d'abord un pays —</option>
+          <!--
+            Pré-remplissage en cas d'erreur de formulaire :
+            si form_data contient déjà id_pays, on recharge les régions via JS au chargement
+          -->
+          {% if form_data.get('id_region') %}
+            {% for r in regions %}
+              {% if r.id|string == form_data.get('id_region') %}
+                <option value="{{ r.id }}" selected>{{ r.nom_region }}</option>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </select>
+      </div>
+    </div>
+
+    <!-- ── SECTION : SÉCURITÉ ── -->
+    <div class="section-label">Sécurité</div>
+
+    <!-- Mot de passe -->
+    <div class="field">
+      <label for="password">Mot de passe <span class="requis">*</span></label>
+      <div class="password-wrapper">
+        <input type="password"
+               id="password"
+               name="password"
+               placeholder="Minimum 6 caractères"
+               required
+               autocomplete="new-password"
+               minlength="6"/>
+        <button type="button" class="eye-btn" aria-label="Afficher le mot de passe" data-target="password">👁</button>
+      </div>
+      <!-- Barre de force du mot de passe -->
+      <div class="strength-bar">
+        <span id="sb1"></span>
+        <span id="sb2"></span>
+        <span id="sb3"></span>
+        <span id="sb4"></span>
+      </div>
+      <div class="strength-text" id="strengthText"></div>
+    </div>
+
+    <!-- Confirmation mot de passe -->
+    <div class="field">
+      <label for="confirm_password">Confirmer le mot de passe <span class="requis">*</span></label>
+      <div class="password-wrapper">
+        <input type="password"
+               id="confirm_password"
+               name="confirm_password"
+               placeholder="Répétez votre mot de passe"
+               required
+               autocomplete="new-password"/>
+        <button type="button" class="eye-btn" aria-label="Afficher" data-target="confirm_password">👁</button>
+      </div>
+      <div class="strength-text" id="matchText"></div>
+    </div>
+
+    <!-- ===== BOUTON SOUMETTRE ===== -->
+    <button type="submit" class="btn-submit" id="btnSubmit">
+      <span id="btnLabel">Créer mon compte</span>
+      <div class="spinner" id="btnSpinner"></div>
+    </button>
+
+  </form>
+
+  <!-- ===== LIEN VERS CONNEXION ===== -->
+  <p class="lien-connexion">
+    Déjà un compte ?
+    <a href="{{ url_for('login_page') }}">Se connecter</a>
+  </p>
+
+</div><!-- /.card -->
+
+
+<!-- ===================================================================
+     JAVASCRIPT
+     1. Chargement dynamique des régions quand le pays change
+     2. Toggle visibilité mot de passe
+     3. Indicateur de force du mot de passe
+     4. Validation confirmation mot de passe
+     5. Spinner au submit
+     =================================================================== -->
+<script>
+  /* ── 1. CHARGEMENT DYNAMIQUE DES RÉGIONS ── */
+  const selectPays   = document.getElementById('id_pays');
+  const selectRegion = document.getElementById('id_region');
+
+  // Valeur pré-sélectionnée en cas de reprise après erreur
+  const paysPreselect   = "{{ form_data.get('id_pays', '') }}";
+  const regionPreselect = "{{ form_data.get('id_region', '') }}";
+
+  selectPays.addEventListener('change', function () {
+    const idPays = this.value;
+    if (!idPays) {
+      selectRegion.innerHTML = '<option value="">— Sélectionnez d\'abord un pays —</option>';
+      selectRegion.disabled = true;
+      return;
+    }
+    chargerRegions(idPays, null);
+  });
+
+  async function chargerRegions(idPays, preselectId) {
+    selectRegion.disabled = true;
+    selectRegion.innerHTML = '<option value="">Chargement…</option>';
+    try {
+      // ✅ Route API : /api/regions/<id_pays> (Blueprint inscription_bp dans auth_inscription.py)
+      const resp = await fetch(`/api/regions/${idPays}`);
+      const regions = await resp.json();
+
+      if (regions.length === 0) {
+        selectRegion.innerHTML = '<option value="">Aucune région disponible</option>';
+        return;
+      }
+
+      selectRegion.innerHTML = '<option value="">— Choisir une région —</option>';
+      regions.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.nom_region;
+        if (preselectId && r.id == preselectId) opt.selected = true;
+        selectRegion.appendChild(opt);
+      });
+      selectRegion.disabled = false;
+    } catch (e) {
+      selectRegion.innerHTML = '<option value="">Erreur de chargement</option>';
+    }
+  }
+
+  // Si formulaire renvoyé après erreur : recharger les régions du pays déjà choisi
+  if (paysPreselect) {
+    chargerRegions(paysPreselect, regionPreselect);
+  }
+
+
+  /* ── 2. TOGGLE VISIBILITÉ MOT DE PASSE ── */
+  document.querySelectorAll('.eye-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const input = document.getElementById(this.dataset.target);
+      if (input.type === 'password') {
+        input.type = 'text';
+        this.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        this.textContent = '👁';
+      }
+    });
+  });
+
+
+  /* ── 3. FORCE DU MOT DE PASSE ── */
+  const pwInput     = document.getElementById('password');
+  const strengthBar = [
+    document.getElementById('sb1'),
+    document.getElementById('sb2'),
+    document.getElementById('sb3'),
+    document.getElementById('sb4'),
+  ];
+  const strengthText = document.getElementById('strengthText');
+
+  const COLORS = {
+    weak:   '#E05C5C',
+    medium: '#E0A03C',
+    good:   '#7BC87A',
+    strong: '#4CAF72',
+  };
+
+  function evaluerForce(pw) {
+    let score = 0;
+    if (pw.length >= 6)  score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+    return score; // 0-4
+  }
+
+  pwInput.addEventListener('input', function () {
+    const pw = this.value;
+    if (!pw) {
+      strengthBar.forEach(b => b.style.background = 'var(--bordure)');
+      strengthText.textContent = '';
+      return;
+    }
+    const score = evaluerForce(pw);
+    const labels = ['Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort'];
+    const couleurs = [COLORS.weak, COLORS.weak, COLORS.medium, COLORS.good, COLORS.strong];
+
+    strengthBar.forEach((b, i) => {
+      b.style.background = i < score ? couleurs[score] : 'var(--bordure)';
+    });
+    strengthText.textContent = labels[score];
+    strengthText.style.color = couleurs[score];
+
+    validerConfirmation(); // mise à jour simultanée
+  });
+
+
+  /* ── 4. VALIDATION CONFIRMATION MOT DE PASSE ── */
+  const confirmInput = document.getElementById('confirm_password');
+  const matchText    = document.getElementById('matchText');
+
+  function validerConfirmation() {
+    const pw  = pwInput.value;
+    const cpw = confirmInput.value;
+    if (!cpw) { matchText.textContent = ''; return; }
+    if (pw === cpw) {
+      matchText.textContent = '✓ Les mots de passe correspondent';
+      matchText.style.color = COLORS.strong;
+    } else {
+      matchText.textContent = '✗ Les mots de passe ne correspondent pas';
+      matchText.style.color = COLORS.weak;
+    }
+  }
+
+  confirmInput.addEventListener('input', validerConfirmation);
+
+
+  /* ── 5. SPINNER AU SUBMIT ── */
+  document.getElementById('formInscription').addEventListener('submit', function (e) {
+    // Vérification rapide côté client avant d'envoyer
+    const pw  = pwInput.value;
+    const cpw = confirmInput.value;
+
+    if (pw !== cpw) {
+      e.preventDefault();
+      matchText.textContent = '✗ Les mots de passe ne correspondent pas';
+      matchText.style.color = COLORS.weak;
+      confirmInput.focus();
+      return;
+    }
+
+    const btn     = document.getElementById('btnSubmit');
+    const label   = document.getElementById('btnLabel');
+    const spinner = document.getElementById('btnSpinner');
+
+    btn.disabled = true;
+    label.style.display   = 'none';
+    spinner.style.display = 'block';
+  });
+</script>
+
 </body>
 </html>

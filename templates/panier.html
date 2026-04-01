@@ -1,61 +1,301 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="px-6 pt-10 pb-24 bg-[#F8FAFC] min-h-screen">
-    <div class="mb-10">
-        <h2 class="text-3xl font-black text-[var(--primary-blue)] italic tracking-tighter">Mon Panier</h2>
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[3px] mt-1">{{ cart_count }} articles sélectionnés</p>
+<style>
+    :root {
+        --premium-green: #22C55E;
+        --premium-gold: #D4AF37;
+        --jumia-gray: #f1f1f1;
+    }
+    body { background-color: var(--jumia-gray); font-family: 'Segoe UI', Roboto, sans-serif; }
+    .cart-container { padding-bottom: 100px; }
+
+    .header-panier {
+        background: white; padding: 15px 16px; font-weight: 800;
+        border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px;
+        position: sticky; top: 0; z-index: 100;
+    }
+
+    .product-card {
+        background: white; padding: 12px;
+        display: flex; flex-direction: column; margin-bottom: 8px;
+        transition: opacity 0.3s ease;
+    }
+    .product-link-area { display: flex; gap: 12px; text-decoration: none; color: inherit; }
+    .product-img { width: 85px; height: 85px; object-fit: cover; border-radius: 10px; background: #f9f9f9; flex-shrink: 0; }
+    .product-details { flex: 1; min-width: 0; }
+    .product-name {
+        font-size: 13px; color: #1e293b; font-weight: 700; margin-bottom: 2px;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .price-main { font-size: 15px; font-weight: 900; color: #0f172a; margin-top: 4px; display: block; }
+    .merchant-label { font-size: 9px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+    .product-actions {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5;
+        flex-wrap: wrap; gap: 8px;
+    }
+    .btn-remove {
+        color: #ff4d4d; font-size: 11px; background: none; border: none;
+        display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 700;
+    }
+    .qty-selector {
+        display: flex; align-items: center; gap: 10px;
+        background: #f8f8f8; padding: 4px 8px; border-radius: 20px;
+    }
+    .qty-btn {
+        width: 26px; height: 26px; background: white; color: var(--premium-gold);
+        border: 1px solid #e5e7eb; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 14px; cursor: pointer;
+    }
+
+    /* ── BOUTON COMMANDER DIRECT ── */
+    .btn-commander {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        color: white; border: none; border-radius: 20px;
+        padding: 8px 18px; font-size: 11px; font-weight: 900;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        cursor: pointer; display: flex; align-items: center; gap: 6px;
+        box-shadow: 0 4px 12px rgba(22,163,74,0.3);
+        transition: all 0.2s;
+    }
+    .btn-commander:active  { transform: scale(0.95); }
+    .btn-commander.loading { opacity: 0.7; pointer-events: none; }
+    .btn-commander.done    { background: linear-gradient(135deg, #2563eb,#1d4ed8); pointer-events: none; }
+
+    /* ── RÉCAPITULATIF ── */
+    .checkout-section {
+        margin: 16px 15px; padding: 20px;
+        background: white; border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+
+    /* Bloc infos client (récupérées de son profil) */
+    .client-info-bar {
+        margin: 10px 15px; padding: 12px 16px;
+        background: linear-gradient(135deg,#eff6ff,#dbeafe);
+        border-radius: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .client-info-bar i { color: #2563eb; font-size: 18px; }
+    .client-info-text  { font-size: 11px; color: #1e40af; font-weight: 700; line-height: 1.6; }
+
+    /* ── TOAST ── */
+    #toast {
+        position: fixed; bottom: 90px; left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        background: #0f172a; color: white; padding: 11px 22px;
+        border-radius: 50px; font-size: 13px; font-weight: 700;
+        opacity: 0; transition: all 0.3s; z-index: 9999;
+        white-space: nowrap; pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.ok   { background: #16a34a; }
+    #toast.err  { background: #dc2626; }
+
+    .hidden { display: none !important; }
+</style>
+
+<!-- ══ PAGE PANIER ══ -->
+<div class="cart-container">
+    <div class="header-panier">
+        <a href="/" style="color:black;"><i class="fas fa-arrow-left"></i></a>
+        {% set total_items = items|sum(attribute='quantite') %}
+        <span>PANIER <span id="header-qty" style="color:var(--premium-gold);font-size:13px;">({{ total_items }})</span></span>
     </div>
 
-    {% if not items %}
-    <div class="flex flex-col items-center justify-center py-20 text-center">
-        <div class="w-32 h-32 bg-white rounded-[45px] shadow-sm flex items-center justify-center text-5xl mb-8 aura-orbital">
-            🛒
+    <!-- Infos client récupérées automatiquement -->
+    {% if client and (client.telephone or client.email) %}
+    <div class="client-info-bar">
+        <i class="fas fa-user-circle"></i>
+        <div class="client-info-text">
+            📱 {{ client.telephone or 'Pas de téléphone enregistré' }}
+            {% if client.email %} &nbsp;·&nbsp; ✉️ {{ client.email }}{% endif %}
+            <br><span style="color:#3b82f6;font-weight:600;">Ces infos seront envoyées au marchand automatiquement</span>
         </div>
-        <h3 class="text-lg font-black text-[var(--primary-blue)] uppercase">Votre panier est vide</h3>
-        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2 px-10">L'exception n'attend que vous. Commencez vos achats.</p>
-        <a href="/" class="mt-10 px-10 py-5 bg-[var(--primary-blue)] text-white text-[10px] font-black rounded-full shadow-2xl active:scale-95 transition-transform tracking-[3px]">
-            EXPLORER LA BOUTIQUE
-        </a>
-    </div>
-    {% else %}
-    <div class="space-y-4 mb-10">
-        {% for item in items %}
-        <div class="bg-white rounded-[35px] p-4 flex items-center gap-4 shadow-sm border border-slate-50">
-            <div class="w-20 h-20 bg-slate-50 rounded-[25px] flex items-center justify-center text-3xl">
-                📦
-            </div>
-            <div class="flex-grow">
-                <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-tighter">{{ item.name }}</h4>
-                <p class="text-[var(--gold)] font-black text-sm">{{ item.price_gnf }} <span class="text-[8px]">GNF</span></p>
-            </div>
-            <button class="w-10 h-10 rounded-full bg-red-50 text-red-400 flex items-center justify-center">
-                ✕
-            </button>
-        </div>
-        {% endfor %}
-    </div>
-
-    <div class="bg-[var(--primary-blue)] rounded-[40px] p-8 text-white shadow-2xl">
-        <div class="space-y-4 mb-8">
-            <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
-                <span>Sous-total</span>
-                <span>Calcul en cours...</span>
-            </div>
-            <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
-                <span>Livraison</span>
-                <span>Gratuite</span>
-            </div>
-            <div class="h-[1px] bg-white/10 w-full"></div>
-            <div class="flex justify-between items-end">
-                <span class="text-xs font-black uppercase tracking-[3px]">Total</span>
-                <span class="text-2xl font-black text-[var(--gold)] italic">À valider</span>
-            </div>
-        </div>
-        <button class="w-full py-6 bg-white text-[var(--primary-blue)] font-black rounded-[25px] text-[11px] uppercase tracking-[4px] shadow-xl active:scale-95 transition-transform">
-            Passer à la caisse
-        </button>
     </div>
     {% endif %}
+
+    <div id="cart-list">
+        {% if items %}
+            {% for item in items %}
+                {% set prod    = item.produits %}
+                {% set marchand = (prod.profil if prod and prod.profil else {}) %}
+
+                <div class="product-card" id="card-{{ item.id_item }}"
+                     data-item-id="{{ item.id_item }}"
+                     data-prod-id="{{ prod.id }}"
+                     data-prod-nom="{{ prod.nom | e }}"
+                     data-prod-prix="{{ prod.prix }}"
+                     data-prod-img="{{ prod.image_url }}"
+                     data-taille="{{ item.taille or '' }}"
+                     data-couleur="{{ item.couleur or '' }}"
+                     data-commercant-id="{{ prod.id_commercant or '' }}">
+
+                    <a href="/share/product/{{ prod.id }}" class="product-link-area">
+                        <img src="{{ prod.image_url }}" class="product-img">
+                        <div class="product-details">
+                            <h3 class="product-name">{{ prod.nom }}</h3>
+                            <p style="font-size:11px;color:var(--premium-gold);font-weight:bold;">
+                                {{ item.taille if item.taille else 'Standard' }} | {{ item.couleur if item.couleur else 'Unique' }}
+                            </p>
+                            <span class="merchant-label">🛍️ {{ marchand.nom_boutique or 'Boutique Aura' }}</span>
+                            <span class="price-main" data-price="{{ prod.prix }}">
+                                {{ "{:,.0f}".format(prod.prix).replace(',', ' ') }} FCFA
+                            </span>
+                        </div>
+                    </a>
+
+                    <div class="product-actions">
+                        <button onclick="removeItem('{{ item.id_item }}')" class="btn-remove">
+                            <i class="far fa-trash-alt"></i> Supprimer
+                        </button>
+
+                        <div class="qty-selector">
+                            <button onclick="changeQty('{{ item.id_item }}', 'moins')" class="qty-btn">−</button>
+                            <span class="qty-value" id="qty-{{ item.id_item }}" style="font-size:14px;font-weight:700;">{{ item.quantite }}</span>
+                            <button onclick="changeQty('{{ item.id_item }}', 'plus')" class="qty-btn">+</button>
+                        </div>
+
+                        <!-- ✅ BOUTON COMMANDER — UN SEUL CLIC, TOUT AUTOMATIQUE -->
+                        <button class="btn-commander" id="cmd-{{ item.id_item }}"
+                                onclick="commander(this)">
+                            <i class="fas fa-bolt"></i> Commander
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Total -->
+    <div id="checkout-area" class="{% if not items %}hidden{% endif %}">
+        <div class="checkout-section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span style="color:#64748b;font-weight:700;font-size:13px;">Total panier</span>
+                <span id="footer-total" style="font-size:19px;font-weight:900;color:#0f172a;">
+                    {{ "{:,.0f}".format(total_panier).replace(',', ' ') }} FCFA
+                </span>
+            </div>
+            <p style="font-size:10px;color:#94a3b8;font-weight:600;text-align:center;margin:0;">
+                💡 Clique <strong>Commander</strong> sur chaque article pour notifier le marchand
+            </p>
+        </div>
+    </div>
+
+    <div id="empty-state" class="{% if items %}hidden{% endif %}" style="text-align:center;padding:60px 20px;">
+        <i class="fas fa-shopping-basket" style="color:var(--premium-gold);font-size:52px;margin-bottom:16px;"></i>
+        <p style="color:#64748b;font-weight:700;font-size:17px;">Votre panier est vide</p>
+        <a href="/" style="margin-top:18px;display:inline-block;padding:12px 32px;border-radius:25px;color:white;background:var(--premium-gold);text-decoration:none;font-weight:800;">EXPLORER</a>
+    </div>
 </div>
+
+<div id="toast"></div>
+
+<script>
+    function showToast(msg, type = 'ok') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'show ' + type;
+        setTimeout(() => { t.className = ''; }, 3200);
+    }
+
+    // ── COMMANDER UN PRODUIT — ZÉRO FORMULAIRE ─────────────────────────────────
+    async function commander(btn) {
+        const card = btn.closest('.product-card');
+        const qty  = parseInt(card.querySelector('.qty-value').innerText);
+
+        btn.classList.add('loading');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi…';
+
+        try {
+            const res = await fetch('/api/commander', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prod_id:       card.dataset.prodId,
+                    nom_produit:   card.dataset.prodNom,
+                    quantite:      qty,
+                    prix_unitaire: parseFloat(card.dataset.prodPrix),
+                    taille:        card.dataset.taille  || null,
+                    couleur:       card.dataset.couleur || null,
+                    commercant_id: card.dataset.commercantId || null
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                btn.classList.remove('loading');
+                btn.classList.add('done');
+                btn.innerHTML = '<i class="fas fa-check"></i> Commandé !';
+                showToast('✅ Commande envoyée au marchand !', 'ok');
+            } else {
+                throw new Error(data.error || 'Erreur inconnue');
+            }
+        } catch (e) {
+            btn.classList.remove('loading');
+            btn.innerHTML = '<i class="fas fa-bolt"></i> Commander';
+            showToast('❌ ' + e.message, 'err');
+        }
+    }
+
+    // ── Quantités ──────────────────────────────────────────────────────────────
+    function updateGlobalUI() {
+        let total = 0, count = 0;
+        document.querySelectorAll('.product-card').forEach(card => {
+            const qtyEl   = card.querySelector('.qty-value');
+            const priceEl = card.querySelector('.price-main');
+            if (qtyEl && priceEl) {
+                const qty   = parseInt(qtyEl.innerText);
+                const price = parseFloat(priceEl.getAttribute('data-price'));
+                total += qty * price; count += qty;
+            }
+        });
+        document.getElementById('footer-total').innerText = total.toLocaleString('fr-FR').replace(/,/g,' ') + ' FCFA';
+        document.getElementById('header-qty').innerText   = '(' + count + ')';
+        if (typeof updateCartBadge === 'function') updateCartBadge();
+        if (count === 0) {
+            document.getElementById('checkout-area').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+    }
+
+    function changeQty(idItem, action) {
+        fetch('/api/modifier_quantite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_item: idItem, action: action })
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'updated') {
+                document.getElementById('qty-' + idItem).innerText = data.new_qty;
+                updateGlobalUI();
+            } else if (data.status === 'deleted') {
+                const card = document.getElementById('card-' + idItem);
+                if (card) card.remove();
+                updateGlobalUI();
+            }
+        });
+    }
+
+    function removeItem(idItem) {
+        if (!confirm('Supprimer cet article ?')) return;
+        fetch('/api/supprimer_item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_item: idItem })
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') {
+                const card = document.getElementById('card-' + idItem);
+                if (card) {
+                    card.style.opacity = '0';
+                    setTimeout(() => { card.remove(); updateGlobalUI(); }, 300);
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', updateGlobalUI);
+</script>
 {% endblock %}

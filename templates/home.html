@@ -3,139 +3,276 @@
 {% block content %}
 <style>
     :root {
-        --gold: #D4AF37;
-        --primary-blue: #0A192F;
+        --bg-pro-gray: #F1F1F2;
+        --card-white: #FFFFFF;
+        --promo-red: #E61E2A;
+        --stock-blue: #2563eb;
     }
-
+    body { background-color: var(--bg-pro-gray); font-family: 'Inter', sans-serif; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    
-    .format-youtube {
-        aspect-ratio: 16/9;
-        border-radius: 20px;
+    .banner-slide { min-width: calc(100vw - 40px); height: 180px; snap-align: center; border-radius: 20px; overflow: hidden; }
+    .banner-slide img { width: 100%; height: 100%; object-fit: cover; }
+    .cat-btn { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; width: 75px; text-decoration: none; }
+    .cat-icon { width: 52px; height: 52px; background: white; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+
+    /* ── CARTE PRODUIT PLAY STORE ── */
+    .product-card-ps {
+        position: relative;
+        flex: 0 0 150px;
+        background: var(--card-white);
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid #eee;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .product-card-ps:active { transform: scale(0.96); }
+
+    .ps-image-wrap {
+        width: 100%;
+        aspect-ratio: 1;
+        background: #f8f8f8;
         overflow: hidden;
         position: relative;
-        width: 88vw;
-        max-width: 420px;
-        flex-shrink: 0;
+    }
+    .ps-image-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+
+    /* Badge promo */
+    .ps-badge {
+        position: absolute; top: 7px; right: 7px;
+        background: #FFF5ED; color: #F68B1E;
+        font-size: 10px; font-weight: 900;
+        padding: 3px 6px; border-radius: 6px; z-index: 10;
     }
 
-    .banner-img {
-        width: 100%; 
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .banner-container:active .banner-img { transform: scale(1.05); }
-
-    .overlay-gradient {
+    /* ── PHOTO MARCHAND (petit cercle) ── */
+    .merchant-avatar-mini {
         position: absolute;
-        bottom: 0; left: 0; right: 0;
-        height: 60%;
-        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-        pointer-events: none;
+        bottom: 68px; right: 8px;
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        border: 2px solid white;
+        overflow: hidden;
+        background: #1e293b;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; font-weight: 900; color: white;
+        z-index: 20;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .merchant-avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+
+    .ps-info { padding: 6px 8px 8px; }
+    .ps-nom { font-size: 9px; font-weight: 800; color: #1e293b; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .ps-prix { font-size: 13px; font-weight: 900; color: #111; }
+    .ps-old { font-size: 9px; color: #aaa; text-decoration: line-through; }
+
+    .stock-bar-mini { width: 100%; height: 4px; background: #e2e8f0; border-radius: 10px; margin-top: 4px; overflow: hidden; }
+
+    /* ── HEADER SECTION PLAY STORE ── */
+    .ps-section-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 20px; margin-bottom: 10px;
+    }
+    .ps-section-title {
+        font-size: 13px; font-weight: 900; color: #0f172a;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .ps-see-all {
+        font-size: 10px; font-weight: 900; color: #2563eb;
+        text-transform: uppercase; text-decoration: none;
+        letter-spacing: 0.5px;
     }
 
-    .product-card {
-        transition: all 0.3s ease;
-        flex-shrink: 0;
-    }
+    /* ── BARRES STOCK ── */
+    .bar-label { font-size: 7px; font-weight: 900; text-transform: uppercase; margin-top: 4px; display: block; }
+    .stock-bar-bg { width: 100%; height: 5px; background: #e2e8f0; border-radius: 10px; margin-top: 3px; overflow: hidden; }
 </style>
 
-<div class="pt-4 pb-32 space-y-10 bg-[#F8FAFC]">
+<div class="pb-24">
 
-    <section>
-        <div class="px-6 mb-3">
-            <h3 class="text-[var(--primary-blue)] font-black text-[11px] uppercase tracking-[3px] opacity-60">Exploration</h3>
+    <!-- ── BANNIÈRES ── -->
+    <section class="py-4">
+        <div class="flex overflow-x-auto gap-3 px-5 no-scrollbar snap-x mandatory">
+            {% for b in banners %}
+            <div class="banner-slide snap-center"><img src="{{ b.image_url }}"></div>
+            {% endfor %}
         </div>
-        <div class="flex overflow-x-auto gap-5 px-6 no-scrollbar items-start py-2 snap-x">
-            {% set aura_cats = [('📱','Tech','tech'), ('👗','Mode F','mode_f'), ('👕','Mode H','mode_h'), ('🛋️','Maison','deco'), ('👟','Shoes','sport'), ('💄','Beauté','soin'), ('🎮','Jeux','loisir'), ('🔧','Auto','auto')] %}
-            {% for emoji, name, slug in aura_cats %}
-            <a href="{{ url_for('categories') }}?open={{ slug }}" class="snap-start flex-shrink-0 flex flex-col items-center group w-[60px]">
-                <div class="w-14 h-14 rounded-[18px] bg-white shadow-sm border border-slate-100 flex items-center justify-center text-xl transition-all group-active:scale-95">
-                    {{ emoji }}
-                </div>
-                <span class="text-[9px] font-bold text-slate-500 mt-2 uppercase text-center">{{ name }}</span>
+    </section>
+
+    <!-- ── CATÉGORIES PILLULES ── -->
+    <section class="bg-white py-6 mb-4 overflow-hidden">
+        <div class="flex overflow-x-auto gap-4 px-6 no-scrollbar">
+            {% set all_cats = [
+                ('📱','High-Tech','ÉLECTRONIQUE (TÉLÉPHONES, PC)'),
+                ('👗','Femme','HABITS POUR FEMMES'),
+                ('👕','Homme','HABITS POUR HOMMES'),
+                ('👟','Shoes','CHAUSSURES HOMMES & FEMMES'),
+                ('👶','Bébé','AFFAIRES POUR BÉBÉS ET ENFANTS'),
+                ('⌚','Luxe','BIJOUX, MONTRES ET ACCESSOIRES'),
+                ('👜','Sacs','SACS ET MAROQUINERIE'),
+                ('💄','Beauté','BEAUTÉ ET COSMÉTIQUE'),
+                ('🍳','Cuisine','ÉLECTROMÉNAGER (FRIGO, TV)'),
+                ('🛋️','Déco','MEUBLES ET DÉCORATION MAISON'),
+                ('🔨','Outils','OUTILLAGE ET CONSTRUCTION'),
+                ('🔧','Auto','PIÈCES ET VÉHICULES AUTOMOBILES'),
+                ('⚽','Sport','SPORT ET VOYAGE')
+            ] %}
+            {% for emoji, name, slug in all_cats %}
+            <a href="{{ url_for('categories') }}?cat={{ slug }}" class="cat-btn">
+                <div class="cat-icon">{{ emoji }}</div>
+                <span class="text-[8px] font-black mt-2 text-gray-500 uppercase text-center tracking-tighter">{{ name }}</span>
             </a>
             {% endfor %}
         </div>
     </section>
 
-    <section class="pl-6">
-        <h3 class="text-xl font-black mb-4 text-slate-800 tracking-tighter italic">Nouveautés</h3>
-        <div class="flex overflow-x-auto gap-4 no-scrollbar pr-6 snap-x">
-            {% for b in banners if b.position >= 1 and b.position <= 10 %}
-            <div class="snap-center format-youtube shadow-lg banner-container">
-                <img src="{{ b.image_url }}" class="banner-img" loading="lazy">
-                <div class="overlay-gradient"></div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
+    <!-- ══════════════════════════════════════════════════════
+         PRODUITS — STYLE PLAY STORE
+         Chaque groupe = 1 catégorie → scroll horizontal
+    ═══════════════════════════════════════════════════════ -->
 
-    <section class="space-y-6">
-        <div class="px-6 flex justify-between items-center">
-            <h3 class="text-lg font-black text-slate-900 tracking-tight">Sélection pour vous</h3>
-            <span class="text-[var(--gold)] text-[10px] font-bold animate-pulse">LIVE FEED</span>
-        </div>
+    {% if produits %}
 
-        <div class="flex overflow-x-auto gap-4 px-6 no-scrollbar snap-x">
-            {% for produit in produits[:50] %}
-            <div class="snap-start w-[160px] product-card bg-white rounded-[24px] p-2 shadow-sm border border-slate-50">
-                <div class="h-48 w-full mb-2 overflow-hidden rounded-[20px] bg-slate-100">
-                    <img src="{{ produit.image_url }}" class="w-full h-full object-cover">
+    {# ── Ventes Flash (produits avec promo) ── #}
+    {% set flash = produits|selectattr('ancien_prix')|list %}
+    {% if flash %}
+    <section class="mb-6">
+        <div class="ps-section-header">
+            <span class="ps-section-title">🔥 Ventes Flash</span>
+            <a href="/categories" class="ps-see-all">Voir tout →</a>
+        </div>
+        <div class="flex overflow-x-auto gap-3 px-5 no-scrollbar">
+            {% for p in flash %}
+            <div onclick="openProduct('{{ p.id }}')" class="product-card-ps">
+
+                {% set red = ((p.ancien_prix|float - p.prix|float) / p.ancien_prix|float * 100)|round|int %}
+                {% if red > 0 %}<div class="ps-badge">-{{ red }}%</div>{% endif %}
+
+                <div class="ps-image-wrap">
+                    <img src="{{ p.image_url }}" alt="{{ p.nom }}" loading="lazy">
                 </div>
-                <h4 class="font-bold text-[11px] text-slate-800 truncate px-1">{{ produit.nom_produit }}</h4>
-                <p class="text-[var(--primary-blue)] font-black text-sm px-1">{{ "{:,.0f}".format(produit.prix).replace(',', ' ') }} <span class="text-[8px]">GNF</span></p>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
 
-    <section class="pl-6 py-4 bg-slate-900/5">
-        <h3 class="text-xl font-black mb-4 text-slate-800 tracking-tighter">Événements</h3>
-        <div class="flex overflow-x-auto gap-4 no-scrollbar pr-6 snap-x">
-            {% for b in banners if b.position >= 11 and b.position <= 20 %}
-            <div class="snap-center format-youtube shadow-lg banner-container">
-                <img src="{{ b.image_url }}" class="banner-img" loading="lazy">
-                <div class="overlay-gradient"></div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
-
-    <section class="px-6">
-        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[4px] mb-6 text-center">Continuer l'exploration</h3>
-        <div class="grid grid-cols-2 gap-4">
-            {% for produit in produits[50:150] %}
-            <div class="bg-white rounded-[28px] p-2 shadow-sm border border-slate-100 overflow-hidden">
-                <div class="h-52 w-full mb-2 overflow-hidden rounded-[22px] relative">
-                    <img src="{{ produit.image_url }}" class="w-full h-full object-cover">
-                    <div class="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-[8px] font-black uppercase">New</div>
+                <!-- Photo marchand -->
+                <div class="merchant-avatar-mini">
+                    {% if p.profil and p.profil.photo_url %}
+                        <img src="{{ p.profil.photo_url }}" alt="">
+                    {% else %}
+                        {{ (p.profil.nom_boutique[0]|upper) if p.profil and p.profil.nom_boutique else '?' }}
+                    {% endif %}
                 </div>
-                <div class="px-2 pb-2">
-                    <h4 class="font-bold text-xs text-slate-800 truncate">{{ produit.nom_produit }}</h4>
-                    <div class="flex justify-between items-center mt-1">
-                        <p class="text-[var(--primary-blue)] font-black text-sm">{{ "{:,.0f}".format(produit.prix).replace(',', ' ') }}</p>
-                        <div class="w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center text-white text-[10px]">+</div>
+
+                <div class="ps-info">
+                    <p class="ps-nom">{{ p.nom }}</p>
+                    <div style="display:flex; align-items:baseline; gap:5px;">
+                        <span class="ps-prix">{{ "{:,.0f}".format(p.prix).replace(',', ' ') }} F</span>
+                        <span class="ps-old">{{ "{:,.0f}".format(p.ancien_prix).replace(',', ' ') }} F</span>
                     </div>
+                    {% if p.stock_total and p.stock_total > 0 %}
+                    <div class="stock-bar-mini">
+                        <div class="h-full bg-red-500" style="width: {{ (p.stock / p.stock_total * 100)|round|int }}%"></div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
     </section>
+    {% endif %}
 
-    <section class="pl-6 pt-10 border-t border-slate-200">
-        <h3 class="text-sm font-black mb-4 text-slate-400 uppercase tracking-widest">Offres Spéciales</h3>
-        <div class="flex overflow-x-auto gap-4 no-scrollbar pr-6 snap-x">
-            {% for b in banners if b.position >= 21 and b.position <= 30 %}
-            <div class="snap-center format-youtube shadow-lg banner-container opacity-90 hover:opacity-100 transition-opacity">
-                <img src="{{ b.image_url }}" class="banner-img" loading="lazy">
-                <div class="overlay-gradient"></div>
+    {# ── Sections par catégorie (style Play Store) ── #}
+    {% for cat, items in produits|groupby('categorie') %}
+    {% if cat %}
+    <section class="mb-6">
+        <div class="ps-section-header">
+            <span class="ps-section-title">{{ cat|truncate(22, True, '…') }}</span>
+            <a href="/categories?cat={{ cat|urlencode }}" class="ps-see-all">Voir tout →</a>
+        </div>
+        <div class="flex overflow-x-auto gap-3 px-5 no-scrollbar">
+            {% for p in items %}
+            <div onclick="openProduct('{{ p.id }}')" class="product-card-ps">
+
+                {% if p.ancien_prix and p.ancien_prix|float > p.prix|float %}
+                    {% set red = ((p.ancien_prix|float - p.prix|float) / p.ancien_prix|float * 100)|round|int %}
+                    {% if red > 0 %}<div class="ps-badge">-{{ red }}%</div>{% endif %}
+                {% endif %}
+
+                <div class="ps-image-wrap">
+                    <img src="{{ p.image_url }}" alt="{{ p.nom }}" loading="lazy">
+                </div>
+
+                <!-- Photo marchand (petit cercle bas-droite) -->
+                <div class="merchant-avatar-mini">
+                    {% if p.profil and p.profil.photo_url %}
+                        <img src="{{ p.profil.photo_url }}" alt="">
+                    {% else %}
+                        {{ (p.profil.nom_boutique[0]|upper) if p.profil and p.profil.nom_boutique else '?' }}
+                    {% endif %}
+                </div>
+
+                <div class="ps-info">
+                    <p class="ps-nom">{{ p.nom }}</p>
+                    <span class="ps-prix">{{ "{:,.0f}".format(p.prix).replace(',', ' ') }} F</span>
+
+                    {% if p.ancien_prix and p.ancien_prix|float > p.prix|float %}
+                    <span class="ps-old"> {{ "{:,.0f}".format(p.ancien_prix).replace(',', ' ') }} F</span>
+                    {% endif %}
+
+                    {% if p.stock_total and p.stock_total > 0 %}
+                    <div class="stock-bar-mini">
+                        <div class="h-full bg-blue-600" style="width: {{ (p.stock / p.stock_total * 100)|round|int }}%"></div>
+                    </div>
+                    {% endif %}
+                </div>
+
             </div>
             {% endfor %}
         </div>
     </section>
+    {% endif %}
+    {% endfor %}
+
+    {# ── Produits sans catégorie ── #}
+    {% set sans_cat = produits|rejectattr('categorie')|list %}
+    {% if sans_cat %}
+    <section class="mb-6">
+        <div class="ps-section-header">
+            <span class="ps-section-title">⭐ Autres Produits</span>
+            <a href="/categories" class="ps-see-all">Voir tout →</a>
+        </div>
+        <div class="flex overflow-x-auto gap-3 px-5 no-scrollbar">
+            {% for p in sans_cat %}
+            <div onclick="openProduct('{{ p.id }}')" class="product-card-ps">
+                <div class="ps-image-wrap">
+                    <img src="{{ p.image_url }}" alt="{{ p.nom }}" loading="lazy">
+                </div>
+                <div class="merchant-avatar-mini">
+                    {% if p.profil and p.profil.photo_url %}
+                        <img src="{{ p.profil.photo_url }}" alt="">
+                    {% else %}
+                        {{ (p.profil.nom_boutique[0]|upper) if p.profil and p.profil.nom_boutique else '?' }}
+                    {% endif %}
+                </div>
+                <div class="ps-info">
+                    <p class="ps-nom">{{ p.nom }}</p>
+                    <span class="ps-prix">{{ "{:,.0f}".format(p.prix).replace(',', ' ') }} F</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-20 text-gray-400">
+        <p class="text-[11px] uppercase font-black">Aucun produit disponible</p>
+    </div>
+    {% endif %}
 
 </div>
+
+<script>
+    function openProduct(id) {
+        window.location.href = "/share/product/" + id;
+    }
+</script>
 {% endblock %}

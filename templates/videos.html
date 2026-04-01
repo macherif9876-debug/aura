@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Aura Vidéos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* 
+         * FIX 2 & 3 : Utilisation de 100dvh (dynamic viewport height).
+         * Contrairement à 100vh, 100dvh se réduit automatiquement quand
+         * le clavier virtuel s'ouvre sur mobile → la nav reste en bas.
+         */
+        body, html { 
+            width: 100%; 
+            height: 100dvh;
+            background: #000; 
+            overflow: hidden; 
+            font-family: sans-serif; 
+        }
+
+        /* --- RESPONSIVE CONTAINER --- */
+        @media (min-width: 768px) {
+            body {
+                display: flex;
+                justify-content: center;
+                background: #111;
+            }
+            .app-container {
+                width: 100%;
+                max-width: 450px; 
+                height: 100dvh;
+                position: relative;
+                background: #000;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                overflow: hidden;
+            }
+        }
+        @media (max-width: 767px) {
+            .app-container { width: 100%; height: 100dvh; position: relative; overflow: hidden; }
+        }
+
+        /* HEADER */
+        .header-aura {
+            position: absolute; top: 0; left: 0; right: 0; 
+            z-index: 2000; padding: 15px;
+            background: transparent;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 60px;
+        }
+        .logo-aura { 
+            color: #fff; font-weight: 900; font-size: 1.2rem; 
+            letter-spacing: 1px; text-transform: uppercase; 
+            text-shadow: none; 
+        }
+
+        .header-actions {
+            display: flex; align-items: center; gap: 20px;
+        }
+
+        .search-icon-btn {
+            color: #fff; font-size: 1.4rem; cursor: pointer;
+        }
+
+        .header-cart-icon { 
+            position: relative; font-size: 1.4rem; color: #fff; 
+            cursor: pointer; text-shadow: none; 
+            text-decoration: none;
+        }
+        .cart-badge-top { 
+            position: absolute; top: -5px; right: -8px; 
+            background: #ff2d55; color: #fff; 
+            font-size: 0.65rem; font-weight: bold; 
+            padding: 2px 5px; border-radius: 50%; 
+        }
+
+        /* FEED VIDÉO */
+        .video-feed {
+            height: calc(100dvh - 65px); 
+            width: 100%; 
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory; 
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+        .video-feed::-webkit-scrollbar { display: none; }
+
+        .video-slot { 
+            height: 100%;
+            width: 100%; 
+            scroll-snap-align: start; scroll-snap-stop: always; 
+            position: relative; background: #000; 
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+
+        video { 
+            width: 100%; height: 100%; 
+            object-fit: contain; 
+            display: block; background: #000; 
+        }
+
+        .video-overlay { display: none; }
+
+        /* VOLUME */
+        .volume-control {
+            position: absolute; top: 70px; right: 15px; z-index: 2500;
+            background: rgba(0,0,0,0.3); border-radius: 50%; width: 35px; height: 35px;
+            display: flex; align-items: center; justify-content: center; color: #fff;
+            cursor: pointer;
+        }
+
+        /* INFOS PRODUIT */
+        .product-info-mini {
+            position: absolute; 
+            bottom: 25px; 
+            left: 10px; 
+            z-index: 160; 
+            max-width: 90%; 
+            display: flex; flex-direction: column; align-items: flex-start;
+            gap: 4px; 
+            transition: all 0.3s ease;
+        }
+
+        .shop-badge { 
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0, 0, 0, 0.4); 
+            padding: 4px 10px 4px 4px; border-radius: 20px;
+            border: none;
+        }
+        .shop-badge span.emoji { font-size: 0.8rem; margin:0; }
+        .shop-badge span.name { font-size: 0.7rem; color: #fff; font-weight: 600; text-transform: uppercase; }
+
+        /* ── PHOTO MARCHAND VIDÉO (plus grand que les cartes) ── */
+        .merchant-avatar-video {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.6);
+            background: #1e293b;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 900; color: white;
+            flex-shrink: 0;
+        }
+        .merchant-avatar-video img { width: 100%; height: 100%; object-fit: cover; }
+
+        .product-info-mini h3 { 
+            font-size: 0.9rem; 
+            color: #fff; margin: 0; 
+            font-weight: 600; line-height: 1.2;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5); 
+        }
+
+        .price-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
+
+        .price-tag { 
+            font-size: 0.9rem; font-weight: 700; color: #fff; 
+        }
+
+        .btn-more-text { 
+            color: rgba(255,255,255,0.8); font-size: 0.7rem; 
+            cursor: pointer; pointer-events: auto; 
+            background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; 
+        }
+
+        /* --- SECTION DÉTAILS --- */
+        .extra-details-content {
+            display: none;
+            margin-top: 15px;
+            background: #000;
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            border: 1px solid #222;
+            animation: slideUpFade 0.3s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+        }
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .details-label {
+            font-size: 0.7rem;
+            color: #888;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        .stock-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .stock-count { color: #f37021; font-weight: bold; font-size: 0.75rem; }
+        .stock-bar-track {
+            width: 100%; height: 6px; background: #333; border-radius: 3px; margin-bottom: 15px;
+        }
+        .stock-bar-fill-orange {
+            height: 100%; width: 85%; background: #f37021; border-radius: 3px;
+        }
+
+        .desc-text {
+            font-size: 0.8rem; color: #fff; line-height: 1.4; margin-bottom: 15px;
+        }
+
+        .color-options-grid {
+            display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;
+        }
+        .color-btn-style {
+            padding: 8px 16px;
+            border: 1px solid #333;
+            border-radius: 12px;
+            background: #111;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 60px;
+            text-align: center;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .color-btn-style.active {
+            background: #fff;
+            border-color: #fff;
+            color: #000;
+            transform: scale(1.05);
+        }
+        .color-dot {
+            width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .size-options-grid {
+            display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;
+        }
+        .size-btn-style {
+            padding: 8px 16px;
+            border: 1px solid #333;
+            border-radius: 12px;
+            background: #111;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 40px;
+            text-align: center;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .size-btn-style.active {
+            background: #fff;
+            border-color: #fff;
+            color: #000;
+            transform: scale(1.05);
+        }
+
+        /* BOUTON PANIER */
+        .btn-add-cart {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.7rem; 
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+        .btn-add-cart::after {
+            content: ""; position: absolute; top: 0; left: -150%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+            transform: skewX(-20deg); animation: shine-effect 5s infinite;
+        }
+        @keyframes shine-effect { 0% { left: -150%; } 20% { left: 150%; } 100% { left: 150%; } }
+
+        /* SIDEBAR */
+        .side-bar { 
+            position: absolute; right: 10px; bottom: 80px; 
+            display: flex; flex-direction: column; gap: 25px; z-index: 100; 
+        }
+        .side-item { display: flex; flex-direction: column; align-items: center; color: #fff; cursor: pointer; }
+        .side-item i { 
+            font-size: 2.2rem; 
+            transition: 0.2s; 
+            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); 
+        }
+        .side-item span { font-size: 0.75rem; font-weight: 600; margin-top: 4px; }
+        .liked { color: #ff2d55 !important; transform: scale(1.2); }
+
+        /* PROGRESS BAR */
+        .progress-bar-container { 
+            position: absolute; 
+            bottom: 0; left: 0; width: 100%; height: 15px; 
+            z-index: 1000; display: flex; align-items: center; padding: 0;
+            background: transparent; 
+        }
+        .progress-track { 
+            flex: 1; height: 3px; background: rgba(255,255,255,0.2); 
+            margin: 0; position: relative; 
+        }
+        .progress-bar-fill { height: 100%; background: #ff2d55; width: 0%; } 
+
+        /* ICONS STATUS */
+        .status-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); color: #fff; font-size: 60px; opacity: 0; pointer-events: none; z-index: 500; }
+        .animate-status { animation: iconFade 0.6s ease-out; }
+        @keyframes iconFade { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+
+        /* NAV BAS */
+        .nav-aura { 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 65px; 
+            display: flex; justify-content: space-around; align-items: center; 
+            background: #000; 
+            border-top: 1px solid #222; 
+            z-index: 2000; 
+        }
+        .nav-link { 
+            text-decoration: none; color: #666; 
+            display: flex; flex-direction: column; align-items: center; 
+            font-size: 0.65rem; transition: 0.2s; 
+            text-shadow: none;
+        }
+        .nav-link.active { color: #fff; }
+        .emoji { font-size: 1.4rem; margin-bottom: 2px; }
+
+        /* PANELS OVERLAY */
+        .overlay-panel {
+            position: absolute; bottom: -100%; left: 0; width: 100%; height: auto;
+            max-height: 80%; background: #1a1a1a; 
+            border-top-left-radius: 15px; border-top-right-radius: 15px;
+            z-index: 3000; transition: bottom 0.3s ease-in-out; 
+            display: flex; flex-direction: column;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        .overlay-panel.open { bottom: 0; }
+        .panel-header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: bold; }
+
+        /* 
+         * SECTION DE RECHERCHE — isolée du feed vidéo
+         * Elle glisse depuis la droite et prend tout l'écran
+         */
+        .search-full-section {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0a0a; 
+            z-index: 5000; 
+            transform: translateX(100%); 
+            transition: transform 0.3s ease-in-out;
+            display: flex; flex-direction: column;
+        }
+        .search-full-section.active { transform: translateX(0); }
+
+        .search-header-bar {
+            display: flex; align-items: center;
+            padding: 15px; gap: 10px;
+            border-bottom: 1px solid #222;
+            flex-shrink: 0;
+            height: 60px;
+        }
+        .back-btn { color: #fff; font-size: 1.2rem; cursor: pointer; padding: 5px; flex-shrink: 0; }
+        .search-input-area { flex: 1; display: flex; align-items: center; }
+        .search-input-clean { 
+            width: 100%; background: #1a1a1a; border: 1px solid #333; 
+            color: #fff; font-size: 1rem; outline: none; 
+            padding: 8px 12px; border-radius: 20px;
+        }
+        .search-input-clean::placeholder { color: #555; }
+
+        /* Partage Grid */
+        .share-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 25px 15px; }
+        .share-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: #fff; font-size: 0.7rem; cursor: pointer; }
+        .share-btn i { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; }
+        .bg-whatsapp { background: #25D366; }
+        .bg-facebook { background: #1877F2; }
+        .bg-instagram { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%); }
+        .bg-copy { background: #444; }
+        .bg-boost { background: #00f2ea; color: #000 !important; }
+
+        /* 
+         * FIX 1 — GRILLE RÉSULTATS VIDÉO (style TikTok)
+         * Fond distinguable, miniature image visible, nom du produit affiché
+         */
+        .video-search-results {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            padding: 3px;
+            overflow-y: auto;
+            flex: 1;
+            background: #111;
+            align-content: start;
+        }
+
+        .video-search-item {
+            position: relative;
+            aspect-ratio: 9/16;
+            /* FIX 1 : fond gris foncé distinguable du noir — cases visibles même sans image */
+            background: #2a2a2a;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+
+        /* FIX 1 : L'image du produit sert de miniature visible immédiatement */
+        .video-search-item .thumb-img {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        /* FIX 1 : Icône play centrale visible */
+        .video-search-item .thumb-play-icon {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            color: rgba(255,255,255,0.9);
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 6px rgba(0,0,0,0.8));
+            pointer-events: none;
+        }
+
+        /* FIX 1 : Dégradé en bas pour lisibilité du nom */
+        .video-search-item .thumb-gradient {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 55%;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* FIX 1 : Nom du produit visible dans la grille */
+        .video-search-item .thumb-info {
+            position: absolute;
+            bottom: 6px; left: 5px; right: 5px;
+            z-index: 4;
+            pointer-events: none;
+        }
+        .video-search-item .thumb-name {
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            line-height: 1.2;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+            margin-bottom: 2px;
+        }
+        .video-search-item .thumb-likes {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.55rem;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-weight: 600;
+        }
+        .video-search-item .thumb-likes i { color: #ff2d55; }
+
+        /* MESSAGE VIDE / CHARGEMENT RECHERCHE */
+        .search-empty-msg {
+            color: #888;
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 0.9rem;
+            grid-column: 1 / -1;
+        }
+        .search-empty-msg strong { color: #fff; }
+
+        /* Indicateur de chargement animé */
+        .search-loading-msg {
+            color: #666;
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 0.9rem;
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 28px; height: 28px;
+            border: 3px solid #333;
+            border-top-color: #ff2d55;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        /* SPINNER BUFFERING — sur la vidéo courante qui attend le réseau */
+        .video-buffer-spinner {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 300;
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255,255,255,0.15);
+            border-top-color: #ff2d55;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <header class="header-aura">
+            <div class="logo-aura">AURA</div>
+
+            <div class="header-actions">
+                <div class="search-icon-btn" onclick="openFullSearch()">
+                    <i class="fas fa-search"></i>
+                </div>
+
+                <a href="/panier" class="header-cart-icon">
+                    🛒 <span class="cart-badge-top" id="global-cart-count">0</span>
+                </a>
+            </div>
+        </header>
+
+        <div class="video-feed" id="feed">
+            {% for p in produits %}
+            <div class="video-slot" 
+                 id="video-{{ p.id }}"
+                 data-id="{{ p.id }}" 
+                 data-nom="{{ p.nom }}"
+                 data-prix="{{ p.prix }}"
+                 data-image="{{ p.image_url if p.image_url else '' }}"
+                 data-has-colors="{{ 'true' if p.variantes and p.variantes|selectattr('couleur')|list|length > 0 else 'false' }}"
+                 data-has-sizes="{{ 'true' if p.variantes and p.variantes|selectattr('taille')|list|length > 0 else 'false' }}"
+                 onclick="handleTap(this, event)">
+
+                <video class="aura-video" loop playsinline muted preload="none" ontimeupdate="updateVideoUI(this)">
+                    <source src="{{ p.video_url }}" type="video/mp4">
+                </video>
+
+                <!-- Spinner affiché pendant le buffering réseau -->
+                <div class="video-buffer-spinner"></div>
+
+                <div class="volume-control" onclick="toggleMuteGlobal(event)">
+                    <i class="fas fa-volume-mute mute-btn-icon"></i>
+                </div>
+
+                <div class="product-info-mini">
+                    <div class="shop-badge">
+                        {% if p.profil and p.profil.photo_url %}
+                            <div class="merchant-avatar-video"><img src="{{ p.profil.photo_url }}" alt=""></div>
+                        {% else %}
+                            <div class="merchant-avatar-video">{{ (p.profil.nom_boutique[0]|upper) if p.profil and p.profil.nom_boutique else '?' }}</div>
+                        {% endif %}
+                        <span class="name">{{ p.profil.nom_boutique if p.profil and p.profil.nom_boutique else 'Boutique Aura' }}</span>
+                    </div>
+
+                    <h3>{{ p.nom }}</h3>
+
+                    <div class="price-row">
+                        <span class="price-tag">{{ p.prix }} FCFA</span>
+
+                        <button class="btn-add-cart" onclick="addToCart(this, '{{ p.id }}', event)">
+                            Acheter
+                        </button>
+
+                        <span class="btn-more-text" onclick="toggleExtraDetails(this, event)">Voir plus ›</span>
+                    </div>
+
+                    <div class="extra-details-content">
+                        <div class="stock-header">
+                            <span class="details-label" style="margin:0;">STOCK DISPONIBLE</span>
+                            <span class="stock-count">{{ p.stock if p.stock else '10' }} restants</span>
+                        </div>
+                        <div class="stock-bar-track">
+                            <div class="stock-bar-fill-orange"></div>
+                        </div>
+
+                        {% set colors = p.variantes|map(attribute='couleur')|unique|reject('none')|list %}
+                        {% if colors %}
+                        <span class="details-label">COULEURS</span>
+                        <div class="color-options-grid">
+                            {% for c in colors %}
+                            <div class="color-btn-style" onclick="selectColor(this, '{{ c }}', event)">
+                                 <span class="color-dot" style="background-color: {{ c }};"></span>
+                                 {{ c }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% set sizes = p.variantes|map(attribute='taille')|unique|reject('none')|list %}
+                        {% if sizes %}
+                        <span class="details-label">TAILLES</span>
+                        <div class="size-options-grid">
+                            {% for t in sizes %}
+                            <div class="size-btn-style" onclick="selectSize(this, '{{ t }}', event)">
+                                 {{ t }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <span class="details-label">DESCRIPTION</span>
+                        <div class="desc-text">
+                            {{ p.description if p.description else "Aucune description disponible." }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-bar-container">
+                    <div class="progress-track"><div class="progress-bar-fill"></div></div>
+                </div>
+
+                <i class="fas fa-play status-icon play-icon"></i>
+                <i class="fas fa-pause status-icon pause-icon"></i>
+                <i class="fas fa-heart status-icon heart-pop" style="color: #ff2d55;"></i>
+
+                <div class="side-bar">
+                    <div class="side-item" onclick="triggerLike(this.closest('.video-slot')); event.stopPropagation();">
+                        <i class="fas fa-heart like-icon"></i>
+                        <span class="count">{{ p.likes_count or 0 }}</span>
+                    </div>
+                    <div class="side-item" onclick="openComments('{{ p.id }}', this.closest('.video-slot')); event.stopPropagation();">
+                        <i class="fas fa-comment-dots"></i>
+                        <span class="comment-count">{{ p.comments_count or 0 }}</span>
+                    </div>
+                    <div class="side-item" onclick="openShareMenu('{{ p.nom }}', '{{ p.id }}', this.closest('.video-slot')); event.stopPropagation();">
+                        <i class="fas fa-share"></i>
+                        <span class="share-count">{{ p.shares_count or 0 }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="comment-panel" class="overlay-panel">
+            <div class="panel-header">
+                <span>Commentaires</span>
+                <i class="fas fa-times" onclick="closePanels()" style="cursor: pointer;"></i>
+            </div>
+            <div class="comment-list" id="comment-list-container" style="flex:1; overflow-y:auto; padding:15px; min-height:200px;"></div>
+            <div class="comment-input-area" style="padding:15px; border-top:1px solid #333; display:flex; gap:10px;">
+                <input type="text" id="comment-input" placeholder="Ajouter un commentaire..." style="flex:1; background:#333; border:none; border-radius:20px; padding:12px; color:#fff; outline:none;">
+                <button onclick="sendComment()" style="background:#ff2d55; border:none; color:#fff; width:45px; height:45px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <div id="share-panel" class="overlay-panel">
+            <div class="panel-header">
+                <span>Partager ce produit</span>
+                <i class="fas fa-times" onclick="closePanels()" style="cursor: pointer;"></i>
+            </div>
+            <div class="share-grid">
+                <a href="#" id="share-whatsapp" class="share-btn" target="_blank">
+                    <i class="fab fa-whatsapp bg-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </a>
+                <a href="#" id="share-facebook" class="share-btn" target="_blank">
+                    <i class="fab fa-facebook-f bg-facebook"></i>
+                    <span>Facebook</span>
+                </a>
+                <a href="#" id="share-instagram" class="share-btn" target="_blank">
+                    <i class="fab fa-instagram bg-instagram"></i>
+                    <span>Instagram</span>
+                </a>
+                <div class="share-btn" onclick="copyLink()">
+                    <i class="fas fa-link bg-copy"></i>
+                    <span>Lien</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SECTION RECHERCHE VIDÉO — ISOLÉE DU FEED (style TikTok)     -->
+        <!-- ============================================================ -->
+        <div id="full-search-section" class="search-full-section">
+            <div class="search-header-bar">
+                <div class="back-btn" onclick="closeFullSearch()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <div class="search-input-area">
+                    <input 
+                        type="text" 
+                        id="full-search-input" 
+                        oninput="doVideoSearch()" 
+                        class="search-input-clean" 
+                        placeholder="🔍 Rechercher une vidéo..."
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                    >
+                </div>
+            </div>
+            <div id="video-results-grid" class="video-search-results"></div>
+        </div>
+        <!-- ============================================================ -->
+
+        <nav class="nav-aura">
+            <a href="/" class="nav-link"><span class="emoji">🏠</span>Accueil</a>
+            <a href="/categories" class="nav-link"><span class="emoji">🍔</span>Rayons</a>
+            <a href="/videos" class="nav-link active"><span class="emoji">🎬</span>Vidéos</a>
+            <a href="/panier" class="nav-link"><span class="emoji">🛒</span>Panier</a>
+            <a href="/compte" class="nav-link"><span class="emoji">👤</span>Compte</a>
+        </nav>
+
+    </div> 
+
+    <script>
+        let tapTimeout, lastTap = 0, isGlobalMuted = true;
+        let activeVideoSlot = null, activeProductId = null;
+        let searchTimeout = null;
+
+        // ==============================================================
+        // 🔍 LOGIQUE RECHERCHE VIDÉO — SYNCHRONISÉE AVEC main.py
+        // ==============================================================
+        function doVideoSearch() {
+            const query = document.getElementById('full-search-input').value.trim();
+            const grid = document.getElementById('video-results-grid');
+
+            if (query.length < 2) {
+                grid.innerHTML = "";
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+
+            // FIX 3 : Spinner visible pendant la recherche
+            grid.innerHTML = `
+                <div class="search-loading-msg">
+                    <div class="spinner"></div>
+                    <span>Recherche en cours...</span>
+                </div>
+            `;
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/videos/recherche?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    grid.innerHTML = "";
+
+                    if (!data || data.length === 0) {
+                        grid.innerHTML = `<div class="search-empty-msg">Aucune vidéo trouvée pour <strong>${query}</strong></div>`;
+                        return;
+                    }
+
+                    data.forEach(p => {
+                        if (!p.video_url) return;
+
+                        const item = document.createElement('div');
+                        item.className = "video-search-item";
+
+                        // FIX 1 : Miniature = image produit + icône play + nom visible
+                        const imageUrl = p.image_url || '';
+                        const nomSafe = (p.nom || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                        item.innerHTML = `
+                            ${imageUrl ? `<img class="thumb-img" src="${imageUrl}" loading="lazy" alt="">` : ''}
+                            <div class="thumb-gradient"></div>
+                            <div class="thumb-play-icon"><i class="fas fa-play"></i></div>
+                            <div class="thumb-info">
+                                <div class="thumb-name">${nomSafe}</div>
+                                <div class="thumb-likes">
+                                    <i class="fas fa-heart"></i> ${p.likes_count || 0}
+                                </div>
+                            </div>
+                        `;
+
+                        // FIX 5 : Clic → ferme proprement puis scrolle
+                        item.onclick = () => scrollToVideo(p.id);
+                        grid.appendChild(item);
+                    });
+                })
+                .catch(err => {
+                    console.error("Erreur recherche vidéo:", err);
+                    grid.innerHTML = '<div class="search-empty-msg">Une erreur est survenue. Réessayez.</div>';
+                });
+            }, 400);
+        }
+
+        // FIX 5 : Scroll vers la vidéo — attend que le layout soit stable
+        function scrollToVideo(id) {
+            closeFullSearch();
+            // Attendre 450ms que le clavier + animation soient terminés
+            setTimeout(() => {
+                const target = document.getElementById(`video-${id}`);
+                if (target) {
+                    // FIX 5 : 'instant' = pas de scroll imprévisible
+                    target.scrollIntoView({ behavior: 'instant', block: 'start' });
+                    activeVideoSlot = target;
+                    setTimeout(() => {
+                        const video = target.querySelector('video');
+                        if (video) video.play().catch(() => {});
+                    }, 100);
+                }
+            }, 450);
+        }
+
+        // Ouverture recherche — pause vidéos + clavier fiable sur tous mobiles
+        function openFullSearch() {
+            document.querySelectorAll('.video-slot video').forEach(v => { v.pause(); });
+            document.getElementById('full-search-section').classList.add('active');
+            // setTimeout 200ms = section visible avant focus()
+            // .click() = déclencheur supplémentaire pour iOS Safari
+            setTimeout(() => {
+                const inp = document.getElementById('full-search-input');
+                inp.focus();
+                inp.click();
+            }, 200);
+        }
+
+        // FIX 4 : Fermeture propre — blur clavier EN PREMIER, puis changement de layout
+        function closeFullSearch() {
+            const input = document.getElementById('full-search-input');
+
+            // FIX 4 : Fermer le clavier AVANT de changer le layout → nav reste en bas
+            input.blur();
+
+            // Nettoyer l'interface
+            input.value = "";
+            document.getElementById('video-results-grid').innerHTML = "";
+
+            // Attendre que le clavier soit refermé (~300ms) avant de cacher la section
+            setTimeout(() => {
+                document.getElementById('full-search-section').classList.remove('active');
+                // Reprendre la vidéo après stabilisation du layout
+                setTimeout(() => {
+                    if (activeVideoSlot) {
+                        const video = activeVideoSlot.querySelector('video');
+                        if (video) video.play().catch(() => {});
+                    }
+                }, 100);
+            }, 300);
+        }
+
+        // --- SYNCHRONISATION AVEC LA BASE DE DONNÉES (SUPABASE) ---
+        function updateCartBadge() {
+            fetch('/api/panier_count')
+            .then(res => res.json())
+            .then(data => {
+                const badge = document.getElementById('global-cart-count');
+                badge.innerText = data.count || 0;
+                badge.style.transform = "scale(1.5)";
+                setTimeout(() => badge.style.transform = "scale(1)", 200);
+            });
+        }
+
+        // --- AJOUT AU PANIER VIA API PYTHON ---
+        function addToCart(btn, id, event) {
+            event.stopPropagation();
+            const slot = btn.closest('.video-slot');
+
+            const hasColors = slot.dataset.hasColors === "true";
+            const hasSizes = slot.dataset.hasSizes === "true";
+            const selectedColor = slot.dataset.selectedColor;
+            const selectedSize = slot.dataset.selectedSize;
+
+            if (hasColors && !selectedColor) {
+                alert("⚠️ Choisissez une couleur !");
+                const details = slot.querySelector('.extra-details-content');
+                if(details.style.display !== "block") slot.querySelector('.btn-more-text').click();
+                return;
+            }
+            if (hasSizes && !selectedSize) {
+                alert("⚠️ Choisissez une taille !");
+                const details = slot.querySelector('.extra-details-content');
+                if(details.style.display !== "block") slot.querySelector('.btn-more-text').click();
+                return;
+            }
+
+            fetch('/api/ajouter_au_panier', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    product_id: id,
+                    prix: slot.getAttribute('data-prix'),
+                    taille: selectedSize || null,
+                    couleur: selectedColor || null
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Ajouté !';
+                    btn.style.background = "#22C55E";
+                    updateCartBadge();
+                } else {
+                    alert("Veuillez vous connecter pour ajouter au panier.");
+                    window.location.href = '/login';
+                }
+            })
+            .catch(err => console.error("Erreur panier:", err));
+        }
+
+        function closePanels() {
+            document.querySelectorAll('.overlay-panel').forEach(p => p.classList.remove('open'));
+            if (activeVideoSlot && !document.getElementById('full-search-section').classList.contains('active')) {
+                activeVideoSlot.querySelector('video').play().catch(()=>{});
+            }
+        }
+
+        function toggleExtraDetails(btn, event) {
+            event.stopPropagation();
+            const parent = btn.closest('.product-info-mini');
+            const details = parent.querySelector('.extra-details-content');
+            if (details.style.display === "block") {
+                details.style.display = "none";
+                btn.innerText = "Voir plus ›";
+            } else {
+                details.style.display = "block";
+                btn.innerText = "Réduire ‹";
+            }
+        }
+
+        function selectColor(btn, colorName, event) {
+            event.stopPropagation();
+            const container = btn.closest('.color-options-grid');
+            container.querySelectorAll('.color-btn-style').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            btn.closest('.video-slot').dataset.selectedColor = colorName;
+        }
+
+        function selectSize(btn, sizeName, event) {
+            event.stopPropagation();
+            const container = btn.closest('.size-options-grid');
+            container.querySelectorAll('.size-btn-style').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            btn.closest('.video-slot').dataset.selectedSize = sizeName;
+        }
+
+        function triggerLike(slot) {
+            const prodId = slot.getAttribute('data-id');
+            const heart = slot.querySelector('.heart-pop');
+            const icon = slot.querySelector('.like-icon');
+            const span = slot.querySelector('.count');
+            showIcon(heart);
+            fetch(`/api/like/${prodId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "liked") icon.classList.add('liked');
+                else icon.classList.remove('liked');
+                if (data.new_count !== undefined) span.innerText = data.new_count;
+            });
+        }
+
+        function openShareMenu(name, id, slot) {
+            activeProductId = id;
+            activeVideoSlot = slot;
+            const url = window.location.origin + '/share/product/' + id;
+            const text = encodeURIComponent(`Regarde ce produit sur Aura : ${name}\n`);
+            document.getElementById('share-whatsapp').href = `https://wa.me/?text=${text}${url}`;
+            document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+            document.getElementById('share-panel').classList.add('open');
+            slot.querySelector('video').pause();
+        }
+
+        function copyLink() {
+            const url = window.location.origin + '/share/product/' + activeProductId;
+            navigator.clipboard.writeText(url);
+            alert("Lien copié !");
+        }
+
+        function openComments(prodId, slot) {
+            activeProductId = prodId;
+            activeVideoSlot = slot;
+            slot.querySelector('video').pause();
+            document.getElementById('comment-panel').classList.add('open');
+            loadComments(prodId);
+        }
+
+        function loadComments(prodId) {
+            const container = document.getElementById('comment-list-container');
+            container.innerHTML = '<p style="text-align:center;color:#666;">Chargement...</p>';
+            fetch(`/api/comments/${prodId}`)
+            .then(res => res.json())
+            .then(data => {
+                container.innerHTML = '';
+                if (!data || data.length === 0) container.innerHTML = '<p style="text-align:center;color:#666;">Aucun commentaire.</p>';
+                else {
+                    data.forEach(c => {
+                        const div = document.createElement('div');
+                        div.style.marginBottom = "10px";
+                        div.innerHTML = `<b style="color:#ff2d55;">${c.author}</b><br><span style="color:#fff;">${c.content}</span>`;
+                        container.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        function sendComment() {
+            const input = document.getElementById('comment-input');
+            const content = input.value.trim();
+            if (!content || !activeProductId) return;
+            fetch(`/api/comments/${activeProductId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content: content })
+            })
+            .then(res => res.json())
+            .then(data => {
+                input.value = '';
+                loadComments(activeProductId);
+                activeVideoSlot.querySelector('.comment-count').innerText = data.new_count;
+            });
+        }
+
+        function updateVideoUI(v) {
+            const slot = v.parentElement;
+            const fill = slot.querySelector('.progress-bar-fill');
+            if (v.duration) fill.style.width = (v.currentTime / v.duration) * 100 + "%";
+        }
+
+        function toggleMuteGlobal(event) {
+            event.stopPropagation();
+            isGlobalMuted = !isGlobalMuted;
+            document.querySelectorAll('video').forEach(v => v.muted = isGlobalMuted);
+            document.querySelectorAll('.mute-btn-icon').forEach(i => i.className = isGlobalMuted ? "fas fa-volume-mute" : "fas fa-volume-up");
+        }
+
+        function handleTap(slot, event) {
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                clearTimeout(tapTimeout);
+                triggerLike(slot);
+            } else {
+                tapTimeout = setTimeout(() => {
+                    const video = slot.querySelector('video');
+                    if (video.paused) { video.play(); showIcon(slot.querySelector('.play-icon')); }
+                    else { video.pause(); showIcon(slot.querySelector('.pause-icon')); }
+                }, 300);
+            }
+            lastTap = now;
+        }
+
+        function showIcon(el) {
+            el.classList.add('animate-status');
+            setTimeout(() => el.classList.remove('animate-status'), 600);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // PRÉ-CHARGEMENT STYLE TIKTOK
+        // Quand vous regardez la vidéo N → charge N+1 et N-1 en avance
+        // ═══════════════════════════════════════════════════════════
+        function preloadAdjacentVideos(currentSlot) {
+            const slots = Array.from(document.querySelectorAll('.video-slot'));
+            const idx = slots.indexOf(currentSlot);
+            [idx + 1, idx - 1].forEach(i => {
+                if (i < 0 || i >= slots.length) return;
+                const vid = slots[i].querySelector('video');
+                if (vid && vid.getAttribute('preload') !== 'auto') {
+                    vid.setAttribute('preload', 'auto');
+                    vid.load();
+                }
+            });
+        }
+
+        // SPINNER DE BUFFERING — affiché si la vidéo attend le réseau
+        function attachBufferEvents(video) {
+            const slot = video.closest('.video-slot');
+            if (!slot || slot.dataset.bufferBound) return;
+            slot.dataset.bufferBound = "1";
+            const sp = slot.querySelector('.video-buffer-spinner');
+            if (!sp) return;
+            video.addEventListener('waiting', () => { sp.style.display = 'block'; });
+            video.addEventListener('canplay', () => { sp.style.display = 'none'; });
+            video.addEventListener('playing', () => { sp.style.display = 'none'; });
+        }
+        document.querySelectorAll('.video-slot video').forEach(v => attachBufferEvents(v));
+        // ═══════════════════════════════════════════════════════════
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target.querySelector('video');
+                if (entry.isIntersecting) {
+                    document.querySelectorAll('video').forEach(v => {
+                        if (v !== video) { v.pause(); v.currentTime = 0; }
+                    });
+                    if (!document.getElementById('full-search-section').classList.contains('active')) {
+                        activeVideoSlot = entry.target;
+                        // Activer le chargement complet si pas encore fait
+                        if (video.getAttribute('preload') !== 'auto') {
+                            video.setAttribute('preload', 'auto');
+                            video.load();
+                        }
+                        video.play().catch(() => {});
+                        // Pré-charger les voisines en arrière-plan
+                        preloadAdjacentVideos(entry.target);
+                    }
+                } else {
+                    video.pause();
+                }
+            });
+        }, { threshold: 0.6 });
+        document.querySelectorAll('.video-slot').forEach(slot => observer.observe(slot));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartBadge();
+            // Pré-charger la 1ère vidéo dès l'ouverture de la page
+            const first = document.querySelector('.video-slot video');
+            if (first) { first.setAttribute('preload', 'auto'); first.load(); }
+        });
+    </script>
+</body>
+</html>

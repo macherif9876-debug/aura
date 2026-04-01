@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Résultats de recherche - AURA{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <div class="mb-6">
+        <h1 class="text-xl font-black uppercase tracking-tighter">
+            {% if query %}
+                Résultats pour "{{ query }}"
+            {% elif image_search %}
+                Résultats par analyse d'image
+            {% else %}
+                Recherche IA
+            {% endif %}
+        </h1>
+        <p class="text-gray-500 text-xs font-bold uppercase">
+            {{ produits|length }} article(s) trouvé(s) par l'IA
+        </p>
+    </div>
+
+    {% if produits %}
+    <div class="grid grid-cols-2 gap-4">
+        {% for produit in produits %}
+        <div onclick="openProduct('{{ produit.id }}')" class="product-item bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm active:scale-95 transition-transform">
+            <div class="relative h-48 bg-gray-50">
+                <img src="{{ produit.image_url }}" alt="{{ produit.nom }}" class="w-full h-full object-contain p-2">
+                {% if produit.ancien_prix %}
+                <div class="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg">
+                    PROMO
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="p-3">
+                <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">{{ produit.categorie }}</p>
+                <h3 class="font-black text-sm text-gray-900 truncate uppercase tracking-tighter">{{ produit.nom }}</h3>
+
+                <div class="flex items-center justify-between mt-2">
+                    <div>
+                        <span class="text-blue-600 font-black text-sm">{{ "{:,.0f}".format(produit.prix).replace(',', ' ') }} FCFA</span>
+                    </div>
+                    <button class="w-8 h-8 bg-gray-900 text-white rounded-xl flex items-center justify-center text-xs">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="text-6xl mb-4">🔍</div>
+        <h3 class="font-black uppercase">Aucun résultat</h3>
+        <p class="text-gray-500 text-sm px-10">L'IA n'a pas trouvé de correspondance exacte. Essayez d'autres mots ou une autre photo.</p>
+        <a href="/" class="mt-6 bg-blue-600 text-white px-8 py-3 rounded-2xl font-black uppercase text-xs">Retour à l'accueil</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function openProduct(id) {
+        // Cette fonction appellera la modale déjà présente dans base.html
+        if(typeof window.parent.openProduct === 'function') {
+            window.parent.openProduct(id);
+        } else {
+            // Si on est sur la même page
+            window.openProduct(id);
+        }
+    }
+</script>
+{% endblock %}

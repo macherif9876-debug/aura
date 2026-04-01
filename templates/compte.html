@@ -1,111 +1,1213 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-    /* Design System Aura 2025 */
-    .account-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    /* ── LAYOUT ── */
+    .account-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
     .menu-item {
-        background: white; border-radius: 24px; padding: 1.5rem;
+        background: white; border-radius: 20px; padding: 1.5rem;
         display: flex; flex-direction: column; align-items: center;
-        justify-content: center; text-align: center; border: 1px solid #f1f5f9;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); cursor: pointer;
+        justify-content: center; text-align: center;
+        border: 1.5px solid #f1f5f9;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer;
     }
-    .menu-item:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: #000; }
-    .menu-item i { font-size: 1.5rem; margin-bottom: 0.75rem; color: #64748b; }
-    .menu-item span { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1e293b; }
+    .menu-item:active { transform: scale(0.97); }
+    .menu-item i { font-size: 1.6rem; margin-bottom: 0.6rem; color: #334155; }
+    .menu-item span { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #1e293b; }
 
-    .user-header { background: black; border-radius: 35px; padding: 2rem; color: white; margin-bottom: 2rem; display: flex; align-items: center; gap: 1.5rem; }
-    .avatar-circle { width: 70px; height: 70px; background: white; color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; font-style: italic; }
+    /* ── HEADER ── */
+    .user-header {
+        background: linear-gradient(135deg, #0f0f0f, #1a1a2e);
+        border-radius: 30px; padding: 1.8rem 1.5rem;
+        color: white; margin-bottom: 1.5rem;
+        display: flex; align-items: center; gap: 1.2rem;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    }
 
-    .content-section { display: none; animation: fadeIn 0.4s ease-out; }
-    .content-section.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* ── AVATAR ── */
+    .avatar-wrapper { position: relative; width: 75px; height: 75px; cursor: pointer; flex-shrink: 0; }
+    .avatar-circle {
+        width: 75px; height: 75px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; font-weight: 900; overflow: hidden;
+        border: 3px solid rgba(255,255,255,0.25);
+        transition: border-color 0.2s, transform 0.2s;
+        background: white; color: black;
+    }
+    .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-wrapper:active .avatar-circle { transform: scale(0.95); }
 
-    .admin-card { background: linear-gradient(135deg, #1e293b, #000); border-radius: 30px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.1); }
+    /* ── BADGE ROLE ── */
+    .role-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 3px 10px; border-radius: 50px;
+        font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+        background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8);
+        margin-top: 4px;
+    }
+
+    /* ── SPINNER ── */
+    .avatar-spinner {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center;
+    }
+    .avatar-spinner.active { display: flex; }
+    .spinner-ring {
+        width: 26px; height: 26px;
+        border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff;
+        border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SECTIONS ── */
+    /* ── ANIMATION PLEINE PAGE (style app native) ── */
+    #main-menu {
+        transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
+    }
+    #main-menu.sortie {
+        transform: translateX(-100%);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .content-section {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #F8FAFC;
+        z-index: 100;
+        overflow-y: auto;
+        padding: 1.2rem;
+        transform: translateX(100%);
+        transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .content-section.entree {
+        display: block;
+        transform: translateX(100%);
+    }
+    .content-section.active {
+        display: block;
+        transform: translateX(0);
+    }
+    .content-section.sortie {
+        display: block;
+        transform: translateX(100%);
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── BOUTON NOTIFICATIONS ── */
+    .btn-notif-activer {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 16px; border-radius: 14px;
+        background: linear-gradient(135deg, #1e3a5f, #2563eb);
+        color: white; border: none; cursor: pointer;
+        font-size: 11px; font-weight: 900;
+        letter-spacing: 0.5px; white-space: nowrap;
+        transition: opacity 0.2s;
+    }
+    .btn-notif-activer:active { opacity: 0.8; }
+    .btn-notif-activer.active {
+        background: linear-gradient(135deg, #14532d, #16a34a);
+    }
+
+    .section-header {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 1.5rem;
+    }
+    .back-btn {
+        width: 38px; height: 38px; border-radius: 50%;
+        background: #f1f5f9; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem; color: #64748b; flex-shrink: 0;
+        transition: background 0.2s;
+    }
+    .back-btn:active { background: #e2e8f0; }
+    .section-title { font-size: 1.2rem; font-weight: 900; color: #0f172a; font-style: italic; text-transform: uppercase; }
+
+    /* ── CARTE COMMANDE ── */
+    .commande-card {
+        background: white; border-radius: 20px; padding: 1.2rem;
+        border: 1.5px solid #f1f5f9; margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .statut-badge {
+        display: inline-block; padding: 3px 12px; border-radius: 50px;
+        font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .statut-en_attente  { background: #fef3c7; color: #92400e; }
+    .statut-en_livraison { background: #dbeafe; color: #1e40af; }
+    .statut-livree      { background: #dcfce7; color: #166534; }
+    .statut-annulee     { background: #fee2e2; color: #991b1b; }
+
+    /* ── FAVORIS ── */
+    .favoris-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+    .favori-card {
+        background: white; border-radius: 18px; overflow: hidden;
+        border: 1.5px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .favori-card img { width: 100%; height: 130px; object-fit: cover; }
+    .favori-info { padding: 0.75rem; }
+    .favori-nom { font-size: 0.75rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .favori-prix { font-size: 0.85rem; font-weight: 900; color: #000; }
+
+    /* ── PARRAINAGE ── */
+    .code-parrainage {
+        background: linear-gradient(135deg, #000, #1e293b);
+        border-radius: 20px; padding: 1.5rem; text-align: center; color: white;
+        margin-bottom: 1.5rem;
+    }
+    .code-value {
+        font-size: 2rem; font-weight: 900; letter-spacing: 6px;
+        color: #fbbf24; margin: 0.5rem 0;
+    }
+    .stat-parrainage {
+        background: white; border-radius: 18px; padding: 1.2rem;
+        display: flex; align-items: center; justify-content: space-between;
+        border: 1.5px solid #f1f5f9; margin-bottom: 0.8rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    /* ── PROFIL EDIT ── */
+    .profile-field { margin-bottom: 1.2rem; }
+    .profile-field label {
+        display: block; font-size: 9px; font-weight: 900;
+        color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;
+    }
+    .profile-field input, .profile-field select {
+        width: 100%; padding: 0.9rem 1rem; border-radius: 14px;
+        border: 1.5px solid #e2e8f0; font-size: 0.85rem; font-weight: 600;
+        background: #f8fafc; color: #0f172a; outline: none;
+        transition: border-color 0.2s;
+    }
+    .profile-field input:focus, .profile-field select:focus { border-color: #000; background: white; }
+
+    .save-btn {
+        width: 100%; padding: 1rem; background: black; color: white;
+        border: none; border-radius: 16px; font-size: 0.8rem; font-weight: 900;
+        text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    .save-btn:active { opacity: 0.8; }
+
+    /* ── BONS ── */
+    .bon-card {
+        background: white; border-radius: 20px; padding: 1.2rem;
+        border: 1.5px dashed #e2e8f0; margin-bottom: 1rem;
+        display: flex; align-items: center; gap: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .bon-montant {
+        width: 60px; height: 60px; border-radius: 50%;
+        background: #000; color: white;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.85rem; font-weight: 900; flex-shrink: 0;
+    }
+
+    /* ── MESSAGES ── */
+    .message-card {
+        background: white; border-radius: 18px; padding: 1rem 1.2rem;
+        border: 1.5px solid #f1f5f9; margin-bottom: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .message-card-header {
+        display: flex; align-items: center; gap: 10px; width: 100%;
+    }
+    .message-avatar {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: #f1f5f9; display: flex; align-items: center;
+        justify-content: center; font-weight: 900; font-size: 1.1rem; flex-shrink: 0;
+    }
+    .message-non-lu { border-left: 3px solid #000; }
+
+    /* ── ADMIN ── */
+    .admin-card {
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        border-radius: 24px; padding: 1.4rem; margin-bottom: 1.5rem;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    /* ── MODAL PHOTO ── */
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+        z-index: 1000; display: none; flex-direction: column;
+        align-items: center; justify-content: center; padding: 2rem;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-photo {
+        width: 200px; height: 200px; border-radius: 50%;
+        object-fit: cover; border: 4px solid rgba(255,255,255,0.2);
+        margin-bottom: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .modal-initiale {
+        width: 200px; height: 200px; border-radius: 50%;
+        background: white; color: black;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 4rem; font-weight: 900; font-style: italic;
+        margin-bottom: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .modal-nom { color: white; font-size: 1.5rem; font-weight: 900; font-style: italic; margin-bottom: 0.3rem; text-align: center; }
+    .modal-email { color: rgba(255,255,255,0.5); font-size: 0.75rem; margin-bottom: 2rem; text-align: center; }
+    .modal-actions { display: flex; flex-direction: column; gap: 0.8rem; width: 100%; max-width: 300px; }
+    .modal-btn {
+        width: 100%; padding: 1rem; border-radius: 16px;
+        font-size: 0.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
+        cursor: pointer; border: none; transition: opacity 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .modal-btn-primary { background: white; color: black; }
+    .modal-btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1.5px solid rgba(255,255,255,0.2); }
+    .modal-btn-close { background: transparent; color: rgba(255,255,255,0.4); font-size: 0.75rem; margin-top: 0.5rem; }
+    .modal-btn:active { opacity: 0.75; }
+
+    /* ── TOAST ── */
+    #toast {
+        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: #0f172a; color: white; padding: 0.75rem 1.5rem;
+        border-radius: 50px; font-size: 0.8rem; font-weight: 700;
+        opacity: 0; transition: all 0.3s; z-index: 9999;
+        white-space: nowrap; pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { background: #16a34a; }
+    #toast.error   { background: #dc2626; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+        text-align: center; padding: 3rem 1rem; color: #94a3b8;
+    }
+    .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+    .empty-state p { font-size: 0.85rem; font-weight: 600; }
 </style>
 
-<div class="bg-[#F8FAFC] min-h-screen pb-32 pt-10 px-6">
-    <div class="max-w-md mx-auto">
-        
-        <div class="user-header shadow-2xl">
-            <div class="avatar-circle">{{ user.prenom[0] if user.prenom else 'A' }}</div>
-            <div>
-                <h2 class="text-2xl font-black italic">{{ user.prenom }} {{ user.nom }}</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{{ user.email }}</p>
-                <div class="mt-2 inline-block px-3 py-1 bg-white/10 rounded-full text-[9px] font-black uppercase">
-                   📍 {{ user.region.nom_region if user.region and user.region.nom_region else 'Zone Aura' }}
-                </div>
-            </div>
-        </div>
+<!-- ══════════════════════════════════════════════════
+     MODAL PHOTO (plein écran au clic sur l'avatar)
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalPhoto">
+    {% if user.photo_url %}
+        <img src="{{ user.photo_url }}" class="modal-photo" id="modalImg" alt="Photo de profil"/>
+    {% else %}
+        <div class="modal-initiale">{{ user.prenom[0]|upper if user.prenom else 'A' }}</div>
+    {% endif %}
 
-        {% if user.role in ['super_admin', 'commercant', 'autorise_commercant'] %}
-        <div class="admin-card text-white shadow-xl">
-            <h3 class="text-[9px] font-black uppercase tracking-[3px] mb-4 opacity-60">Espace Privilégié</h3>
-            <div class="space-y-3">
-                {% if user.role == 'super_admin' %}
-                <a href="/admin/dashboard" class="flex items-center justify-between bg-blue-600/20 p-4 rounded-2xl border border-blue-500/30 hover:bg-blue-600 transition-all">
-                    <span class="text-[10px] font-black uppercase tracking-widest">Gérer l'Application</span>
-                    <i class="fa-solid fa-gear"></i>
-                </a>
-                {% endif %}
+    <div class="modal-nom">{{ user.prenom }} {{ user.nom }}</div>
+    <div class="modal-email">{{ user.email }}</div>
 
-                {% if user.role == 'commercant' or user.role == 'super_admin' %}
-                <a href="/merchant/dashboard" class="flex items-center justify-between bg-green-600/20 p-4 rounded-2xl border border-green-500/30 hover:bg-green-600 transition-all">
-                    <span class="text-[10px] font-black uppercase tracking-widest">Gérer ma Boutique</span>
-                    <i class="fa-solid fa-shop"></i>
-                </a>
-                {% endif %}
-
-                {% if user.role == 'autorise_commercant' %}
-                <a href="/devenir-commercant" class="flex items-center justify-between bg-orange-500 p-4 rounded-2xl text-white font-black hover:scale-[1.02] transition-all">
-                    <span class="text-[10px] font-black uppercase tracking-widest">Finaliser ma Boutique</span>
-                    <i class="fa-solid fa-rocket"></i>
-                </a>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        <div id="main-menu">
-            <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-[3px] mb-6 ml-2">Mon Espace Client</h3>
-            <div class="account-grid">
-                <div onclick="showSection('commandes')" class="menu-item"><i class="fa-solid fa-box-open"></i><span>Commandes</span></div>
-                <div onclick="showSection('messages')" class="menu-item"><i class="fa-solid fa-envelope"></i><span>Messages</span></div>
-                <div onclick="showSection('favoris')" class="menu-item"><i class="fa-solid fa-heart"></i><span>Favoris</span></div>
-                <div onclick="showSection('parrainage')" class="menu-item"><i class="fa-solid fa-users-rays"></i><span>Parrainage</span></div>
-                <div onclick="showSection('profil')" class="menu-item"><i class="fa-solid fa-user-gear"></i><span>Profil</span></div>
-                <div onclick="showSection('bons')" class="menu-item"><i class="fa-solid fa-ticket"></i><span>Bons</span></div>
-            </div>
-            <div class="mt-10">
-                <a href="/logout" class="block w-full py-5 bg-red-50 text-red-500 rounded-3xl font-black text-center text-[10px] uppercase tracking-[2px] border border-red-100">Déconnexion</a>
-            </div>
-        </div>
-
-        <div id="sections-container">
-            <div id="section-profil" class="content-section bg-white p-8 rounded-[35px] border border-slate-100 shadow-sm">
-                <button onclick="hideSections()" class="mb-6 text-[10px] font-bold text-slate-400 uppercase"><i class="fa-solid fa-arrow-left mr-2"></i> Retour</button>
-                <h3 class="text-xl font-black mb-6 italic uppercase">Mes Informations</h3>
-                <div class="space-y-4">
-                    <div class="profile-info-box">
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Statut</label>
-                        <p class="font-bold text-blue-600 uppercase text-xs">{{ user.role }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="modal-actions">
+        <button class="modal-btn modal-btn-primary" onclick="document.getElementById('inputPhoto').click(); fermerModal()">
+            <i class="fa-solid fa-camera"></i> Changer ma photo
+        </button>
+        <button class="modal-btn modal-btn-secondary" onclick="fermerModal(); showSection('edit-profil')">
+            <i class="fa-solid fa-pen"></i> Modifier mon profil
+        </button>
+        <button class="modal-btn modal-btn-secondary" onclick="fermerModal(); showSection('profil')">
+            <i class="fa-solid fa-user"></i> Voir mon profil
+        </button>
+        <button class="modal-btn modal-btn-close" onclick="fermerModal()">
+            <i class="fa-solid fa-xmark"></i> Fermer
+        </button>
     </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     PAGE PRINCIPALE
+═══════════════════════════════════════════════════ -->
+<div class="bg-[#F8FAFC] min-h-screen pb-32 pt-8 px-4">
+<div class="max-w-md mx-auto">
+
+    <!-- ── EN-TÊTE PROFIL ── -->
+    <div class="user-header">
+
+        <div class="avatar-wrapper" onclick="ouvrirModal()" title="Voir le profil">
+            <div class="avatar-circle" id="avatarCircle"
+                 style="background: {% if user.photo_url %}transparent{% else %}white{% endif %};">
+                {% if user.photo_url %}
+                    <img src="{{ user.photo_url }}" alt="Photo" id="avatarImg"/>
+                {% else %}
+                    <span>{{ user.prenom[0]|upper if user.prenom else 'A' }}</span>
+                {% endif %}
+            </div>
+            <div class="avatar-spinner" id="avatarSpinner"><div class="spinner-ring"></div></div>
+        </div>
+
+        <input type="file" id="inputPhoto" accept="image/jpeg,image/png,image/webp"
+               style="display:none" onchange="uploaderPhoto(this)"/>
+
+        <div style="min-width:0;">
+            <h2 style="font-size:1.4rem; font-weight:900; font-style:italic; margin:0;">
+                {{ user.prenom or '' }} {{ user.nom or '' }}
+            </h2>
+            <p style="color:rgba(255,255,255,0.5); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin:4px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                {{ user.email }}
+            </p>
+            <div class="role-badge">
+                📍 {{ user.nom_region or 'Zone Aura' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ESPACE ADMIN / MARCHAND ── -->
+    {% if user.role in ['super_admin', 'commercant', 'autorise_commercant'] %}
+    <div class="admin-card text-white mb-4">
+        <p style="font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:3px; opacity:0.5; margin-bottom:1rem;">Espace Privilégié</p>
+        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            {% if user.role == 'super_admin' %}
+            <a href="/admin/dashboard" style="display:flex; align-items:center; justify-content:space-between; background:rgba(59,130,246,0.15); padding:1rem 1.2rem; border-radius:16px; border:1px solid rgba(59,130,246,0.3); text-decoration:none; color:white;">
+                <span style="font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px;">Gérer l'Application</span>
+                <i class="fa-solid fa-gear"></i>
+            </a>
+            {% endif %}
+            {% if user.role in ['commercant', 'super_admin'] %}
+            <a href="/merchant/dashboard" style="display:flex; align-items:center; justify-content:space-between; background:rgba(34,197,94,0.15); padding:1rem 1.2rem; border-radius:16px; border:1px solid rgba(34,197,94,0.3); text-decoration:none; color:white;">
+                <span style="font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px;">Gérer ma Boutique</span>
+                <i class="fa-solid fa-shop"></i>
+            </a>
+            {% endif %}
+            {% if user.role == 'autorise_commercant' %}
+            <a href="/devenir-commercant" style="display:flex; align-items:center; justify-content:space-between; background:#f97316; padding:1rem 1.2rem; border-radius:16px; text-decoration:none; color:white;">
+                <span style="font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px;">Finaliser ma Boutique</span>
+                <i class="fa-solid fa-rocket"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════════════════════════════════
+         MENU PRINCIPAL
+    ═══════════════════════════════════════════ -->
+    <div id="main-menu">
+        <p style="font-size:10px; font-weight:900; text-transform:uppercase; color:#94a3b8; letter-spacing:3px; margin-bottom:1rem; margin-left:4px;">Mon Espace Client</p>
+
+        <div class="account-grid">
+            <div onclick="showSection('commandes')" class="menu-item">
+                <i class="fa-solid fa-box-open"></i><span>Commandes</span>
+            </div>
+            <div onclick="showSection('messages')" class="menu-item" style="position:relative;">
+                <i class="fa-solid fa-envelope"></i>
+                <span>Messages</span>
+                <span id="badge-messages" style="
+                    position:absolute;top:10px;right:10px;
+                    background:#ef4444;color:white;border-radius:50%;
+                    width:18px;height:18px;font-size:9px;font-weight:900;
+                    display:flex;align-items:center;justify-content:center;
+                    display:none;"></span>
+            </div>
+            <div onclick="showSection('favoris')" class="menu-item">
+                <i class="fa-solid fa-heart"></i><span>Favoris</span>
+            </div>
+            <div onclick="showSection('parrainage')" class="menu-item">
+                <i class="fa-solid fa-users-rays"></i><span>Parrainage</span>
+            </div>
+            <div onclick="showSection('profil')" class="menu-item">
+                <i class="fa-solid fa-user"></i><span>Mon Profil</span>
+            </div>
+            <div onclick="showSection('bons')" class="menu-item">
+                <i class="fa-solid fa-ticket"></i><span>Bons</span>
+            </div>
+        </div>
+
+        <div style="margin-top:2rem;">
+            <a href="/logout" style="display:block; width:100%; padding:1.1rem; background:#fff0f0; color:#ef4444; border-radius:20px; font-weight:900; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:2px; border:1.5px solid #fee2e2; text-decoration:none;">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Déconnexion
+            </a>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTIONS
+    ═══════════════════════════════════════════ -->
+    <div id="sections-container">
+
+        <!-- ── COMMANDES ── -->
+        <div id="section-commandes" class="content-section">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="section-title">Mes Commandes</span>
+            </div>
+            <div id="liste-commandes">
+                <div class="empty-state">
+                    <i class="fa-solid fa-box-open"></i>
+                    <p>Chargement...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MESSAGES ── -->
+        <div id="section-messages" class="content-section">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="section-title">Messages</span>
+                <button onclick="chargerMessages()" title="Actualiser"
+                    style="margin-left:auto;background:#f1f5f9;border:none;border-radius:50%;
+                           width:36px;height:36px;cursor:pointer;color:#64748b;font-size:14px;margin-right:6px;">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+            <!-- ── BOUTON ACTIVER NOTIFICATIONS ── -->
+            <div id="bloc-notif-btn" style="margin-bottom:16px;">
+                <button id="btn-notif" class="btn-notif-activer" onclick="activerNotifManuellement()">
+                    <i class="fa-solid fa-bell"></i>
+                    <span id="notif-btn-texte">Activer les notifications</span>
+                </button>
+                <p id="notif-btn-info" style="font-size:10px;color:#94a3b8;margin:6px 0 0 4px;"></p>
+            </div>
+            <div id="liste-messages">
+                <div class="empty-state">
+                    <i class="fa-solid fa-envelope-open"></i>
+                    <p>Chargement...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── FAVORIS ── -->
+        <div id="section-favoris" class="content-section">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="section-title">Mes Favoris</span>
+            </div>
+            <div id="liste-favoris" class="favoris-grid">
+                <div class="empty-state" style="grid-column:span 2;">
+                    <i class="fa-solid fa-heart"></i>
+                    <p>Chargement...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PARRAINAGE ── -->
+        <div id="section-parrainage" class="content-section">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="section-title">Parrainage</span>
+            </div>
+
+            <div class="code-parrainage">
+                <p style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:2px; opacity:0.6; margin-bottom:0.3rem;">Votre code unique</p>
+                <div class="code-value" id="codeParrainage">...</div>
+                <button onclick="copierCode()" style="margin-top:0.5rem; padding:8px 20px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:50px; color:white; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px; cursor:pointer;">
+                    <i class="fa-solid fa-copy mr-1"></i> Copier
+                </button>
+            </div>
+
+            <div id="stats-parrainage">
+                <div class="stat-parrainage">
+                    <div>
+                        <p style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Filleuls</p>
+                        <p id="nb-filleuls" style="font-size:1.5rem; font-weight:900; color:#0f172a;">-</p>
+                    </div>
+                    <i class="fa-solid fa-users" style="font-size:1.5rem; color:#cbd5e1;"></i>
+                </div>
+                <div class="stat-parrainage">
+                    <div>
+                        <p style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Gains totaux</p>
+                        <p id="gains-parrainage" style="font-size:1.5rem; font-weight:900; color:#0f172a;">-</p>
+                    </div>
+                    <i class="fa-solid fa-sack-dollar" style="font-size:1.5rem; color:#cbd5e1;"></i>
+                </div>
+            </div>
+
+            <div style="margin-top:1.5rem; padding:1rem; background:#f8fafc; border-radius:18px; border:1.5px solid #f1f5f9;">
+                <p style="font-size:11px; color:#64748b; font-weight:600; line-height:1.6;">
+                    🎁 Partagez votre code et gagnez des récompenses pour chaque ami inscrit sur Aura !
+                </p>
+            </div>
+        </div>
+
+        <!-- ── MON PROFIL (lecture) ── -->
+        <div id="section-profil" class="content-section">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="section-title">Mon Profil</span>
+            </div>
+
+            <div style="background:white; border-radius:24px; padding:1.5rem; border:1.5px solid #f1f5f9; box-shadow:0 2px 8px rgba(0,0,0,0.04); margin-bottom:1rem;">
+                {% for label, val in [
+                    ('Prénom',    user.prenom),
+                    ('Nom',       user.nom),
+                    ('Email',     user.email),
+                    ('Téléphone', user.telephone),
+                    ('Région',    user.nom_region),
+                    ('Rôle',      user.role)
+                ] %}
+                <div style="padding:0.8rem 0; {% if not loop.last %}border-bottom:1px solid #f1f5f9;{% endif %}">
+                    <p style="font-size:9px; font-weight:900; color:#94a3b8; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:2px;">{{ label }}</p>
+                    <p style="font-size:0.9rem; font-weight:700; color:#0f172a;">{{ val or '—' }}</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button onclick="showSection('edit-profil')" class="save-btn" style="background:#0f172a;">
+                <i class="fa-solid fa-pen mr-2"></i> Modifier mon profil
+            </button>
+        </div>
+
+        <!-- ── MODIFIER PROFIL ── -->
+        <div id="section-edit-profil" class="content-section">
+            <div class="section-header">
+                <button class="back-btn" onclick="showSection('profil')"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="section-title">Modifier</span>
+            </div>
+
+            <div style="background:white; border-radius:24px; padding:1.5rem; border:1.5px solid #f1f5f9; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div class="profile-field">
+                    <label>Prénom</label>
+                    <input type="text" id="edit-prenom" value="{{ user.prenom or '' }}" placeholder="Votre prénom"/>
+                </div>
+                <div class="profile-field">
+                    <label>Nom</label>
+                    <input type="text" id="edit-nom" value="{{ user.nom or '' }}" placeholder="Votre nom"/>
+                </div>
+                <div class="profile-field">
+                    <label>Téléphone</label>
+                    <input type="tel" id="edit-telephone" value="{{ user.telephone or '' }}" placeholder="+221 XX XXX XX XX"/>
+                </div>
+                <button class="save-btn" onclick="sauvegarderProfil()">
+                    <i class="fa-solid fa-check mr-2"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+
+        <!-- ── BONS ── -->
+        <div id="section-bons" class="content-section">
+            <div class="section-header">
+                <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="section-title">Mes Bons</span>
+            </div>
+            <div id="liste-bons">
+                <div class="empty-state">
+                    <i class="fa-solid fa-ticket"></i>
+                    <p>Chargement...</p>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /sections-container -->
+
+</div>
+</div>
+
+<div id="toast"></div>
+
 <script>
-    function showSection(id) {
-        document.getElementById('main-menu').style.display = 'none';
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById('section-' + id);
-        if (target) { target.classList.add('active'); }
+const USER_ID     = "{{ user.id }}";
+const USER_PRENOM = "{{ user.prenom or '' }}";
+const USER_NOM    = "{{ user.nom or '' }}";
+const USER_EMAIL  = "{{ user.email or '' }}";
+
+document.addEventListener('DOMContentLoaded', () => {
+    chargerBadgeMessages();
+});
+
+/* ══════════ NAVIGATION ══════════ */
+function showSection(id) {
+    const menu   = document.getElementById('main-menu');
+    const target = document.getElementById('section-' + id);
+    if (!target) return;
+
+    menu.classList.add('sortie');
+
+    target.style.display = 'block';
+    target.classList.remove('active', 'sortie');
+    target.classList.add('entree');
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            target.classList.remove('entree');
+            target.classList.add('active');
+        });
+    });
+
+    if (id === 'commandes')  chargerCommandes();
+    if (id === 'messages')   { chargerMessages(); verifierStatutNotif(); }
+    if (id === 'favoris')    chargerFavoris();
+    if (id === 'parrainage') chargerParrainage();
+    if (id === 'bons')       chargerBons();
+}
+
+function hideSections() {
+    const menu = document.getElementById('main-menu');
+
+    document.querySelectorAll('.content-section.active').forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('sortie');
+        setTimeout(() => {
+            s.classList.remove('sortie');
+            s.style.display = 'none';
+        }, 350);
+    });
+
+    menu.classList.remove('sortie');
+}
+
+/* ══════════ MODAL PHOTO ══════════ */
+function ouvrirModal() {
+    document.getElementById('modalPhoto').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function fermerModal() {
+    document.getElementById('modalPhoto').classList.remove('active');
+    document.body.style.overflow = '';
+}
+document.getElementById('modalPhoto').addEventListener('click', function(e) {
+    if (e.target === this) fermerModal();
+});
+
+/* ══════════ TOAST ══════════ */
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + type;
+    setTimeout(() => { t.className = ''; }, 3000);
+}
+
+/* ══════════ UPLOAD PHOTO ══════════ */
+async function uploaderPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('Image trop lourde (max 5 Mo)', 'error'); return; }
+
+    document.getElementById('avatarSpinner').classList.add('active');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const circle = document.getElementById('avatarCircle');
+        circle.style.background = 'transparent';
+        circle.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" id="avatarImg"/>`;
+        const modalImg = document.getElementById('modalImg');
+        if (modalImg) modalImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    const formData = new FormData();
+    formData.append('photo', file);
+    try {
+        const res  = await fetch('/api/upload_photo_profil', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') {
+            if (document.getElementById('avatarImg')) document.getElementById('avatarImg').src = data.photo_url;
+            showToast('✓ Photo mise à jour !', 'success');
+        } else {
+            showToast('Erreur : ' + (data.error || 'Inconnu'), 'error');
+        }
+    } catch(e) { showToast('Erreur réseau', 'error'); }
+    finally {
+        document.getElementById('avatarSpinner').classList.remove('active');
+        input.value = '';
     }
-    function hideSections() {
-        document.getElementById('main-menu').style.display = 'block';
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+}
+
+/* ══════════ COMMANDES ══════════ */
+const STATUT_LABEL = {
+    en_attente:     '⏳ En attente',
+    confirmee:      '✅ Confirmée',
+    en_preparation: '🔧 En préparation',
+    en_livraison:   '🚚 En livraison',
+    livree:         '🎉 Livrée',
+    annulee:        '❌ Annulée'
+};
+async function chargerCommandes() {
+    try {
+        const res  = await fetch('/api/mes_commandes');
+        const data = await res.json();
+        const el   = document.getElementById('liste-commandes');
+        if (!data.length) {
+            el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-box-open"></i><p>Aucune commande pour l'instant</p></div>`;
+            return;
+        }
+        el.innerHTML = data.map(c => {
+            const statut   = c.statut || 'en_attente';
+            const prix     = Number(c.prix_total || 0).toLocaleString('fr-FR').replace(/,/g,' ');
+            const date     = c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}) : '';
+            const variante = [c.taille, c.couleur].filter(Boolean).join(' · ');
+            return `
+            <div class="commande-card">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
+                    <div style="min-width:0;flex:1;padding-right:8px;">
+                        <p style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">#${c.id.substring(0,8).toUpperCase()}</p>
+                        <p style="font-size:0.9rem;font-weight:900;color:#0f172a;margin-bottom:2px;">${c.nom_produit || 'Produit'}</p>
+                        ${variante ? `<p style="font-size:10px;color:#94a3b8;">${variante}</p>` : ''}
+                    </div>
+                    <span class="statut-badge statut-${statut}">${STATUT_LABEL[statut] || statut}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;">
+                    <span style="font-size:13px;font-weight:900;color:#0f172a;">${prix} FCFA <span style="font-size:10px;font-weight:600;color:#94a3b8;">× ${c.quantite || 1}</span></span>
+                    <span style="font-size:10px;color:#94a3b8;">${date}</span>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        document.getElementById('liste-commandes').innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Erreur de chargement</p></div>`;
     }
+}
+
+/* ══════════ MESSAGES ══════════ */
+const MSG_ICON = {
+    commande:     '📦',
+    confirmation: '✅',
+    systeme:      '🔔',
+    message:      '💬'
+};
+const MSG_COLOR = {
+    commande:     '#dbeafe',
+    confirmation: '#dcfce7',
+    systeme:      '#fef3c7',
+    message:      '#f8fafc'
+};
+const MSG_LABEL = {
+    commande:     'Nouvelle Commande',
+    confirmation: 'Commande Confirmée',
+    systeme:      'Notification Aura',
+    message:      'Message'
+};
+
+function buildTelLink(tel) {
+    if (!tel || tel === 'Non renseigné') return '';
+    const cleaned = tel.replace(/\s/g,'').replace(/^00/,'').replace(/^\+/,'');
+    return `<a href="https://wa.me/${cleaned}"
+        style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+               padding:7px 14px;background:#25D366;color:white;border-radius:50px;
+               font-size:10px;font-weight:900;text-decoration:none;letter-spacing:0.5px;"
+        onclick="event.stopPropagation()">
+        <i class="fab fa-whatsapp" style="font-size:13px;"></i>
+        Contacter le client : ${tel}
+    </a>`;
+}
+
+function toggleMessage(id) {
+    const body = document.getElementById('msg-body-' + id);
+    if (!body) return;
+    const estOuvert = body.style.display !== 'none';
+    body.style.display = estOuvert ? 'none' : 'block';
+
+    if (!estOuvert) {
+        fetch('/api/messages/marquer_lu', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({id: id})
+        }).catch(() => {});
+        const card = body.closest('.message-card');
+        if (card) {
+            card.classList.remove('message-non-lu');
+            const point = card.querySelector('.point-non-lu');
+            if (point) point.remove();
+        }
+        chargerBadgeMessages();
+    }
+}
+
+async function chargerBadgeMessages() {
+    try {
+        const res  = await fetch('/api/mes_messages');
+        const data = await res.json();
+        const nonLus = data.filter(m => !m.lu).length;
+        const badge  = document.getElementById('badge-messages');
+        if (badge) {
+            badge.textContent = nonLus > 0 ? nonLus : '';
+            badge.style.display = nonLus > 0 ? 'flex' : 'none';
+        }
+    } catch(e) {}
+}
+
+async function chargerMessages() {
+    const el = document.getElementById('liste-messages');
+    el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Chargement...</p></div>`;
+
+    try {
+        const res  = await fetch('/api/mes_messages');
+        const data = await res.json();
+
+        const nonLus = data.filter(m => !m.lu).length;
+        const badge  = document.getElementById('badge-messages');
+        if (badge) {
+            badge.textContent = nonLus > 0 ? nonLus : '';
+            badge.style.display = nonLus > 0 ? 'flex' : 'none';
+        }
+
+        if (!data.length) {
+            el.innerHTML = `<div class="empty-state">
+                <i class="fa-solid fa-envelope-open"></i>
+                <p>Aucun message pour l'instant</p>
+            </div>`;
+            return;
+        }
+
+        el.innerHTML = data.map(m => {
+            const type   = m.type || 'message';
+            const icone  = MSG_ICON[type]  || '💬';
+            const couleur= MSG_COLOR[type] || '#f8fafc';
+            const label  = MSG_LABEL[type] || 'Message';
+            const date   = m.created_at
+                ? new Date(m.created_at).toLocaleDateString('fr-FR', {
+                    day:'2-digit', month:'short',
+                    hour:'2-digit', minute:'2-digit'
+                  })
+                : '';
+
+            const corps  = (m.contenu || '').replace(/\n/g, '<br>');
+            const apercu = (m.contenu || '').split('\n')[0];
+            const lienWa = buildTelLink(m.telephone_client);
+
+            return `
+            <div class="message-card ${!m.lu ? 'message-non-lu' : ''}"
+                 onclick="toggleMessage('${m.id}')">
+
+                <div class="message-card-header">
+                    <div class="message-avatar" style="background:${couleur};">
+                        ${icone}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                            <div style="min-width:0;flex:1;padding-right:8px;">
+                                <p style="font-size:8px;font-weight:900;color:#94a3b8;
+                                          text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">
+                                    ${label}
+                                </p>
+                                <p style="font-size:0.8rem;font-weight:900;color:#0f172a;
+                                          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                    ${m.expediteur || 'Aura Markeplay'}
+                                </p>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+                                ${!m.lu ? '<span class="point-non-lu" style="width:8px;height:8px;border-radius:50%;background:#0f172a;display:inline-block;"></span>' : ''}
+                                <p style="font-size:9px;color:#94a3b8;">${date}</p>
+                            </div>
+                        </div>
+                        <p style="font-size:0.75rem;color:#64748b;
+                                  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            ${apercu}
+                        </p>
+                    </div>
+                </div>
+
+                <div id="msg-body-${m.id}" style="display:none;margin-top:12px;
+                     padding-top:12px;border-top:1px solid #f1f5f9;width:100%;">
+                    <p style="font-size:0.82rem;color:#334155;line-height:1.8;
+                              white-space:pre-line;">${corps}</p>
+                    ${lienWa}
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch(e) {
+        el.innerHTML = `<div class="empty-state">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <p>Erreur lors du chargement des messages</p>
+        </div>`;
+    }
+}
+
+/* ══════════ FAVORIS ══════════ */
+async function chargerFavoris() {
+    try {
+        const res  = await fetch('/api/mes_favoris');
+        const data = await res.json();
+        const el   = document.getElementById('liste-favoris');
+        if (!data.length) {
+            el.innerHTML = `<div class="empty-state" style="grid-column:span 2;"><i class="fa-solid fa-heart"></i><p>Aucun favori pour l'instant</p></div>`;
+            return;
+        }
+        el.innerHTML = data.map(f => `
+        <div class="favori-card">
+            <img src="${f.image_url || '/static/img/placeholder.jpg'}" alt="${f.nom}" onerror="this.src='/static/img/placeholder.jpg'"/>
+            <div class="favori-info">
+                <p class="favori-nom">${f.nom || 'Produit'}</p>
+                <p class="favori-prix">${Number(f.prix || 0).toLocaleString()} FCFA</p>
+            </div>
+        </div>`).join('');
+    } catch(e) {
+        document.getElementById('liste-favoris').innerHTML = `<div class="empty-state" style="grid-column:span 2;"><i class="fa-solid fa-triangle-exclamation"></i><p>Erreur de chargement</p></div>`;
+    }
+}
+
+/* ══════════ PARRAINAGE ══════════ */
+async function chargerParrainage() {
+    try {
+        const res  = await fetch('/api/mon_parrainage');
+        const data = await res.json();
+        document.getElementById('codeParrainage').textContent = data.code || '------';
+        document.getElementById('nb-filleuls').textContent    = data.nb_filleuls || 0;
+        document.getElementById('gains-parrainage').textContent = (data.gains || 0).toLocaleString() + ' FCFA';
+    } catch(e) {
+        document.getElementById('codeParrainage').textContent = 'ERREUR';
+    }
+}
+function copierCode() {
+    const code = document.getElementById('codeParrainage').textContent;
+    navigator.clipboard.writeText(code).then(() => showToast('✓ Code copié !', 'success'));
+}
+
+/* ══════════ BONS ══════════ */
+async function chargerBons() {
+    try {
+        const res  = await fetch('/api/mes_bons');
+        const data = await res.json();
+        const el   = document.getElementById('liste-bons');
+        if (!data.length) {
+            el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-ticket"></i><p>Aucun bon de réduction disponible</p></div>`;
+            return;
+        }
+        el.innerHTML = data.map(b => `
+        <div class="bon-card">
+            <div class="bon-montant">-${b.montant}%</div>
+            <div style="flex:1; min-width:0;">
+                <p style="font-size:0.8rem; font-weight:900; color:#0f172a; margin-bottom:4px;">${b.code}</p>
+                <p style="font-size:11px; color:#64748b;">Expire le ${b.expires_at ? new Date(b.expires_at).toLocaleDateString('fr-FR') : 'N/A'}</p>
+            </div>
+            <span style="padding:4px 12px; border-radius:50px; font-size:9px; font-weight:900; background:${b.statut==='actif'?'#dcfce7':'#f1f5f9'}; color:${b.statut==='actif'?'#166534':'#64748b'};">${b.statut}</span>
+        </div>`).join('');
+    } catch(e) {
+        document.getElementById('liste-bons').innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Erreur de chargement</p></div>`;
+    }
+}
+
+/* ══════════ SAUVEGARDER PROFIL ══════════ */
+async function sauvegarderProfil() {
+    const data = {
+        prenom:    document.getElementById('edit-prenom').value.trim(),
+        nom:       document.getElementById('edit-nom').value.trim(),
+        telephone: document.getElementById('edit-telephone').value.trim()
+    };
+    try {
+        const res = await fetch('/api/modifier_profil', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            showToast('✓ Profil mis à jour !', 'success');
+            document.querySelector('.user-header h2').textContent = data.prenom + ' ' + data.nom;
+            setTimeout(() => showSection('profil'), 1000);
+        } else {
+            showToast('Erreur : ' + (result.error || 'Inconnu'), 'error');
+        }
+    } catch(e) { showToast('Erreur réseau', 'error'); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   🔔 NOTIFICATIONS PUSH — CORRIGÉ COMPLET
+   BUGS CORRIGÉS :
+   1. sAbonner() utilisait "swReg" au lieu de "sw" → crash silencieux
+   2. JSON.stringify(abo) remplacé par abo.toJSON() pour fiabilité
+══════════════════════════════════════════════════════════ */
+
+// ── Convertit la clé VAPID base64url → Uint8Array ──────────
+function urlBase64VersUint8Array(base64) {
+    const pad = '='.repeat((4 - base64.length % 4) % 4);
+    const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(b64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+// ── Vérification du statut actuel des notifications ────────
+async function verifierStatutNotif() {
+    const btn  = document.getElementById('btn-notif');
+    const txt  = document.getElementById('notif-btn-texte');
+    const info = document.getElementById('notif-btn-info');
+    if (!btn) return;
+
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        btn.style.background = '#334155';
+        if (txt)  txt.textContent  = '❌ Navigateur non compatible';
+        if (info) info.textContent = 'Utilisez Chrome ou Firefox (version récente)';
+        return;
+    }
+
+    const perm = Notification.permission;
+    console.log('[PUSH] Permission actuelle:', perm);
+
+    if (perm === 'granted') {
+        try {
+            const swReg = await navigator.serviceWorker.ready;
+            const abo   = await swReg.pushManager.getSubscription();
+            if (abo) {
+                btn.classList.add('active');
+                if (txt)  txt.textContent  = '✅ Notifications activées';
+                if (info) info.textContent = 'Vous recevrez les alertes en temps réel';
+                console.log('[PUSH] ✅ Abonnement actif');
+            } else {
+                if (txt)  txt.textContent  = '🔔 Activer les notifications';
+                if (info) info.textContent = 'Autorisé mais non abonné — cliquez pour finir';
+                console.log('[PUSH] Autorisé mais pas abonné — relance silencieuse');
+                await sAbonner();
+            }
+        } catch(e) {
+            console.log('[PUSH] Erreur vérif:', e.message);
+        }
+    } else if (perm === 'denied') {
+        btn.classList.remove('active');
+        if (txt)  txt.textContent  = '🚫 Notifications bloquées';
+        if (info) info.textContent = 'Paramètres > Chrome > Notifications > Autoriser';
+    } else {
+        if (txt)  txt.textContent  = '🔔 Activer les notifications';
+        if (info) info.textContent = 'Cliquez pour recevoir vos alertes commandes et messages';
+    }
+}
+
+// ── Bouton "Activer" — clic manuel ─────────────────────────
+async function activerNotifManuellement() {
+    const btn  = document.getElementById('btn-notif');
+    const txt  = document.getElementById('notif-btn-texte');
+    const info = document.getElementById('notif-btn-info');
+
+    // Vérifier uniquement le support navigateur (on supprime la détection port 3000
+    // qui bloquait à tort les vrais navigateurs sur Replit)
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        if (txt)  txt.textContent  = '❌ Navigateur non compatible';
+        if (info) info.textContent = 'Utilisez Chrome ou Firefox (version récente)';
+        return;
+    }
+
+    if (txt) txt.textContent = '⏳ En cours...';
+    if (btn) btn.disabled = true;
+
+    // Garde-fou 15s
+    let fini = false;
+    const garde = setTimeout(() => {
+        if (!fini) {
+            if (txt)  txt.textContent  = '❌ Trop long — réessayez';
+            if (info) info.textContent = 'Vérifiez que sw.js est bien dans /static/sw.js';
+            if (btn)  btn.disabled = false;
+        }
+    }, 15000);
+
+    try {
+        // ── ÉTAPE 1 : Permission ─────────────────────────────
+        console.log('[PUSH] ÉTAPE 1 — Demande permission...');
+        const perm = await Notification.requestPermission();
+        console.log('[PUSH] Permission →', perm);
+
+        if (perm !== 'granted') {
+            fini = true; clearTimeout(garde);
+            if (txt)  txt.textContent  = '❌ Refusé — appuyez Autoriser';
+            if (info) info.textContent = 'Vous devez appuyer sur Autoriser dans la popup Chrome';
+            if (btn)  btn.disabled = false;
+            return;
+        }
+
+        // ── ÉTAPE 2 : Service Worker ─────────────────────────
+        console.log('[PUSH] ÉTAPE 2 — Enregistrement Service Worker...');
+        const swReg = await navigator.serviceWorker.register('/static/sw.js');
+        console.log('[PUSH] ✅ SW enregistré:', swReg.scope);
+
+        // Attendre activation (max 3s)
+        await new Promise(resolve => {
+            if (swReg.active) { resolve(); return; }
+            const worker = swReg.installing || swReg.waiting;
+            if (!worker) { resolve(); return; }
+            worker.addEventListener('statechange', () => {
+                if (worker.state === 'activated') resolve();
+            });
+            setTimeout(resolve, 3000);
+        });
+        console.log('[PUSH] ✅ SW prêt');
+
+        // ── ÉTAPE 3 : Clé VAPID ──────────────────────────────
+        console.log('[PUSH] ÉTAPE 3 — Récupération clé VAPID...');
+        const resV = await fetch('/api/push/cle_publique');
+        const { cle_publique } = await resV.json();
+        console.log('[PUSH] Clé:', cle_publique ? '✅ ' + cle_publique.substring(0,15) + '...' : '❌ ABSENTE');
+
+        if (!cle_publique) {
+            fini = true; clearTimeout(garde);
+            if (txt)  txt.textContent  = '❌ Clé VAPID absente';
+            if (info) info.textContent = 'Ajoutez VAPID_PUBLIC_KEY dans Secrets Replit';
+            if (btn)  btn.disabled = false;
+            return;
+        }
+
+        // ── ÉTAPE 4 : Abonnement Push ────────────────────────
+        console.log('[PUSH] ÉTAPE 4 — Création abonnement...');
+        let abo = await swReg.pushManager.getSubscription();
+        if (abo) {
+            console.log('[PUSH] Abonnement existant réutilisé');
+        } else {
+            abo = await swReg.pushManager.subscribe({
+                userVisibleOnly:      true,
+                applicationServerKey: urlBase64VersUint8Array(cle_publique)
+            });
+            console.log('[PUSH] ✅ Nouvel abonnement créé');
+        }
+        console.log('[PUSH] Endpoint:', abo.endpoint.substring(0, 60) + '...');
+
+        // ── ÉTAPE 5 : Enregistrement serveur ─────────────────
+        console.log('[PUSH] ÉTAPE 5 — Envoi au serveur...');
+        const res  = await fetch('/api/push/abonner', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(abo.toJSON())   // ✅ .toJSON() pour sérialisation correcte
+        });
+        const data = await res.json();
+        console.log('[PUSH] Réponse serveur:', JSON.stringify(data));
+
+        fini = true; clearTimeout(garde);
+
+        if (data.status === 'ok') {
+            if (btn)  btn.classList.add('active');
+            if (txt)  txt.textContent  = '✅ Notifications activées !';
+            if (info) info.textContent = 'Parfait ! Vous recevrez toutes vos alertes';
+            console.log('[PUSH] 🎉 SUCCÈS — Abonnement enregistré !');
+        } else {
+            if (txt)  txt.textContent  = '⚠️ Problème serveur';
+            if (info) info.textContent = data.error || 'Erreur inconnue';
+            console.log('[PUSH] ❌ Erreur serveur:', data.error);
+        }
+
+    } catch(e) {
+        fini = true; clearTimeout(garde);
+        if (txt)  txt.textContent  = '❌ ' + e.message;
+        if (info) info.textContent = 'Vérifiez que sw.js est dans /static/sw.js';
+        console.log('[PUSH] ❌ Exception:', e.name, '→', e.message);
+    }
+
+    if (btn) btn.disabled = false;
+}
+
+// ── Abonnement silencieux (appelé auto si permission déjà accordée) ──
+// ✅ BUG CORRIGÉ : "swReg" remplacé par "sw" (variable correcte dans ce scope)
+async function sAbonner() {
+    try {
+        const sw  = await navigator.serviceWorker.ready;   // ✅ "sw" et pas "swReg"
+        const res = await fetch('/api/push/cle_publique');
+        const { cle_publique } = await res.json();
+        if (!cle_publique) return;
+
+        let abo = await sw.pushManager.getSubscription();   // ✅ sw.pushManager
+        if (!abo) {
+            abo = await sw.pushManager.subscribe({           // ✅ sw.pushManager
+                userVisibleOnly:      true,
+                applicationServerKey: urlBase64VersUint8Array(cle_publique)
+            });
+        }
+
+        const r = await fetch('/api/push/abonner', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(abo.toJSON())            // ✅ .toJSON() fiable
+        });
+        const d = await r.json();
+        console.log('[PUSH] sAbonner silencieux →', d.status);
+
+        // Mettre à jour le bouton si succès
+        if (d.status === 'ok') {
+            const btn  = document.getElementById('btn-notif');
+            const txt  = document.getElementById('notif-btn-texte');
+            const info = document.getElementById('notif-btn-info');
+            if (btn)  btn.classList.add('active');
+            if (txt)  txt.textContent  = '✅ Notifications activées';
+            if (info) info.textContent = 'Vous recevrez les alertes en temps réel';
+        }
+    } catch(e) {
+        console.log('[PUSH] sAbonner erreur:', e.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.location.hash === '#messages') showSection('messages');
+});
+
 </script>
 {% endblock %}

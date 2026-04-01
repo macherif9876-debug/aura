@@ -2,197 +2,458 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA - Merchant Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AURA PRO - Business Suite 🚀</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: { darkBg: '#0f172a', darkCard: '#1e293b' }
-                }
+            theme: { 
+                extend: { 
+                    colors: { darkBg: '#0f172a', darkCard: '#1e293b', auraBlue: '#2563eb', auraDeepBlue: '#1e3a8a' },
+                    borderRadius: { 'aura': '2rem' }
+                } 
             }
         }
     </script>
     <style>
         .section { display: none; }
         .section.active { display: block; }
-        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        .aura-glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .dark .aura-glass { background: rgba(30, 41, 59, 0.8); }
+        @media (max-width: 1023px) {
+            #sidebar { transition: transform 0.3s ease-in-out; }
+            #sidebar.open { transform: translateX(0); }
+            #overlay { display: none; }
+            #overlay.show { display: block; }
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+        .stat-card { aspect-ratio: 1 / 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .img-square { aspect-ratio: 1 / 1; object-fit: cover; }
+        
+        .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #mode-options { transition: all 0.4s ease; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-white transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-white transition-all duration-300 overflow-x-hidden">
 
-    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-darkCard shadow-2xl transform -translate-x-full sidebar-transition lg:translate-x-0 border-r border-slate-200 dark:border-slate-700">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-10">
-                <h1 class="font-black italic text-xl tracking-tighter text-blue-600">AURA PRO</h1>
-                <button onclick="toggleMenu()" class="lg:hidden"><i class="fa-solid fa-xmark"></i></button>
+    <div id="overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity"></div>
+
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-darkCard shadow-2xl transform -translate-x-full lg:translate-x-0 border-r border-slate-100 dark:border-slate-800">
+        <div class="p-6 flex flex-col h-full overflow-y-auto">
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="font-black italic text-2xl text-auraBlue tracking-tighter">AURA PRO ✨</h1>
+                <button onclick="toggleMenu()" class="lg:hidden text-slate-400"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             
-            <nav class="space-y-2">
-                <button onclick="showSection('dashboard')" class="w-full flex items-center p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 font-bold text-sm">
-                    <i class="fa-solid fa-chart-pie mr-3"></i> Tableau de bord
+            <nav class="space-y-1 flex-1">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-3 px-4 tracking-widest">Tableau de bord</p>
+                <button onclick="showSection('analytics')" class="nav-btn w-full flex items-center p-4 rounded-2xl bg-auraBlue text-white font-black text-sm transition-all shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-chart-pie mr-3"></i> Votre résumé
                 </button>
-                <button onclick="showSection('inventory')" class="w-full flex items-center p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm">
-                    <i class="fa-solid fa-box mr-3"></i> Mes Produits
+                <button onclick="showSection('studio')" class="nav-btn w-full flex items-center p-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm text-slate-500 transition-all">
+                    <i class="fa-solid fa-plus-circle mr-3"></i> Ajouter un produit
                 </button>
-                <button onclick="showSection('analytics')" class="w-full flex items-center p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm">
-                    <i class="fa-solid fa-arrow-trend-up mr-3"></i> Graphiques
+                
+                <p class="text-[10px] font-black text-slate-400 uppercase mt-8 mb-3 px-4 tracking-widest">Ma Boutique</p>
+                <button onclick="showSection('inventory')" class="nav-btn w-full flex items-center p-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm text-slate-500">
+                    <i class="fa-solid fa-boxes-stacked mr-3"></i> Gérer vos stocks
+                </button>
+                <button onclick="showSection('molo-molo')" class="nav-btn w-full flex items-center p-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm text-slate-500">
+                    <i class="fa-solid fa-hand-holding-dollar mr-3"></i> Crédits clients
+                </button>
+                <button onclick="showSection('history')" class="nav-btn w-full flex items-center p-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm text-slate-500">
+                    <i class="fa-solid fa-clock-rotate-left mr-3"></i> Liste des commandes
+                </button>
+                <button onclick="showSection('wallet')" class="nav-btn w-full flex items-center p-4 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm text-slate-500">
+                    <i class="fa-solid fa-wallet mr-3"></i> Mon Argent
                 </button>
             </nav>
+
+            <div class="mt-8 pt-6 space-y-3 border-t dark:border-slate-700">
+                <a href="/" class="w-full flex items-center justify-center p-4 rounded-2xl bg-auraDeepBlue text-white font-black text-[10px] uppercase tracking-widest hover:bg-blue-900 transition-all shadow-lg">
+                    <i class="fa-solid fa-shop mr-3 text-lg"></i> Voir ma boutique 🏠
+                </a>
+                <a href="/logout" class="w-full flex items-center justify-center p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-600 font-black text-[10px] uppercase tracking-widest hover:bg-red-100 transition-all">
+                    <i class="fa-solid fa-power-off mr-3 text-lg"></i> Quitter
+                </a>
+            </div>
         </div>
     </div>
 
-    <div class="lg:ml-64 min-h-screen">
-        <nav class="p-6 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-darkCard/80 backdrop-blur-md sticky top-0 z-40">
-            <button onclick="toggleMenu()" class="lg:hidden text-xl"><i class="fa-solid fa-bars"></i></button>
-            <h2 id="section-title" class="font-black uppercase italic text-sm tracking-widest">Tableau de Bord</h2>
-            
+    <div class="lg:ml-72 min-h-screen">
+        <header class="p-4 lg:p-6 aura-glass sticky top-0 z-40 border-b dark:border-slate-800 flex justify-between items-center">
             <div class="flex items-center gap-4">
-                <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                <button onclick="toggleMenu()" class="lg:hidden w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-xl">
+                    <i class="fa-solid fa-bars-staggered"></i>
                 </button>
-                <a href="/compte" class="text-[10px] font-black bg-black text-white px-4 py-2 rounded-full uppercase">Quitter</a>
+                <h2 id="section-title" class="font-black uppercase italic text-[10px] md:text-xs tracking-widest">Votre résumé</h2>
             </div>
-        </nav>
+            <button onclick="toggleDarkMode()" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-transform active:scale-90">
+                <i id="theme-icon" class="fa-solid fa-moon"></i>
+            </button>
+        </header>
 
-        <div class="p-6 max-w-5xl mx-auto">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                    <div class="mb-6 p-4 rounded-2xl text-xs font-black uppercase {% if category == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
-                        {{ message }}
+        <main class="p-4 lg:p-8 max-w-7xl mx-auto">
+            
+            <div id="analytics" class="section active space-y-6 md:space-y-8">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
+                    <div class="stat-card p-4 rounded-[30px] bg-white dark:bg-darkCard border dark:border-slate-800 shadow-sm">
+                        <p class="text-[9px] font-black text-slate-400 uppercase mb-2">Argent gagné</p>
+                        <i class="fa-solid fa-money-bill-trend-up text-green-500 text-xl mb-2"></i>
+                        <p class="text-lg font-black italic">{{ total_ca or 0 }} <span class="text-[8px]">GNF</span></p>
                     </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div id="dashboard" class="section active space-y-8">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white dark:bg-darkCard p-6 rounded-[30px] border border-slate-100 dark:border-slate-700 shadow-sm">
-                        <p class="text-[10px] font-black text-slate-400 uppercase">Chiffre d'Affaire</p>
-                        <p class="text-3xl font-black italic">1.250.000 <span class="text-sm">FCFA</span></p>
+                    <div class="stat-card p-4 rounded-[30px] bg-white dark:bg-darkCard border dark:border-slate-800 shadow-sm">
+                        <p class="text-[9px] font-black text-orange-500 uppercase mb-2">Pas encore livrés</p>
+                        <i class="fa-solid fa-truck-fast text-orange-500 text-xl mb-2"></i>
+                        <p class="text-xl font-black italic text-orange-500">{{ non_livres_count or 0 }}</p>
                     </div>
-                    <div class="bg-white dark:bg-darkCard p-6 rounded-[30px] border border-slate-100 dark:border-slate-700 shadow-sm">
-                        <p class="text-[10px] font-black text-slate-400 uppercase">Commandes</p>
-                        <p class="text-3xl font-black italic">42</p>
+                    <div class="stat-card p-4 rounded-[30px] bg-white dark:bg-darkCard border dark:border-slate-800 shadow-sm">
+                        <p class="text-[9px] font-black text-blue-500 uppercase mb-2">Articles vendus</p>
+                        <i class="fa-solid fa-cart-check text-blue-500 text-xl mb-2"></i>
+                        <p class="text-xl font-black italic text-blue-500">{{ total_vendus_count or 0 }}</p>
                     </div>
-                    <div class="bg-white dark:bg-darkCard p-6 rounded-[30px] border border-slate-100 dark:border-slate-700 shadow-sm">
-                        <p class="text-[10px] font-black text-slate-400 uppercase">Total Produits</p>
-                        <p class="text-3xl font-black italic">{{ produits|length }}</p>
+                    <div class="stat-card p-4 rounded-[30px] bg-emerald-50 dark:bg-emerald-500/5 border-2 border-emerald-500/20 shadow-sm">
+                        <p class="text-[9px] font-black text-emerald-600 uppercase mb-2">Valeur du stock</p>
+                        <i class="fa-solid fa-vault text-emerald-500 text-xl mb-2"></i>
+                        <p class="text-lg font-black italic text-emerald-600">{{ capital_stock or 0 }} <span class="text-[8px]">GNF</span></p>
+                    </div>
+                    <div class="stat-card p-4 rounded-[30px] bg-white dark:bg-darkCard border dark:border-slate-800 shadow-sm">
+                        <p class="text-[9px] font-black text-purple-500 uppercase mb-2">Vos modèles</p>
+                        <i class="fa-solid fa-layer-group text-purple-500 text-xl mb-2"></i>
+                        <p class="text-xl font-black italic text-purple-500">{{ total_produits_count or 0 }}</p>
+                    </div>
+                    <div class="stat-card p-4 rounded-[30px] bg-white dark:bg-darkCard border dark:border-slate-800 shadow-sm">
+                        <p class="text-[9px] font-black text-red-500 uppercase mb-2">Stock restant</p>
+                        <i class="fa-solid fa-cubes text-red-500 text-xl mb-2"></i>
+                        <p class="text-xl font-black italic text-red-500">{{ stock_restant or 0 }}</p>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-darkCard p-8 rounded-[40px] border border-slate-100 dark:border-slate-700">
-                    <h2 class="text-lg font-black uppercase italic mb-6">Ajouter un nouveau produit</h2>
-                    <form action="/merchant/add_product" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-4">
-                            <input type="text" name="nom" placeholder="Nom du produit" required class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
-                            <input type="number" name="prix" placeholder="Prix (FCFA)" required class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
-                            <input type="number" name="stock" placeholder="Quantité en Stock" required class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-[40px] border dark:border-slate-800 shadow-sm">
+                        <h4 class="font-black uppercase text-[10px] mb-6 italic opacity-50">Evolution des ventes</h4>
+                        <div class="h-[250px] w-full">
+                            <canvas id="businessChart"></canvas>
                         </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-[40px] border dark:border-slate-800 shadow-sm overflow-hidden">
+                        <h4 class="font-black uppercase text-[10px] mb-6 italic opacity-50">Dernières commandes</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-[11px] font-bold min-w-[300px]">
+                                <thead>
+                                    <tr class="text-slate-400 uppercase border-b dark:border-slate-700">
+                                        <th class="pb-3 px-2">Ref.</th>
+                                        <th class="pb-3 px-2">Montant</th>
+                                        <th class="pb-3 px-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y dark:divide-slate-700">
+                                    {% if not transactions %}
+                                    <tr><td colspan="3" class="py-12 text-center opacity-30 italic">Aucune opération pour le moment.</td></tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="history" class="section">
+                <div class="bg-white dark:bg-darkCard p-6 rounded-[40px] border dark:border-slate-800 shadow-sm overflow-hidden">
+                    <h4 class="font-black uppercase text-[10px] mb-6 italic text-auraBlue">Liste des clients qui ont acheté</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-[12px]">
+                            <thead>
+                                <tr class="text-slate-400 uppercase border-b dark:border-slate-700">
+                                    <th class="pb-4 px-2">Client</th>
+                                    <th class="pb-4 px-2">Date/Heure</th>
+                                    <th class="pb-4 px-2">Téléphone</th>
+                                    <th class="pb-4 px-2">Article</th>
+                                    <th class="pb-4 px-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y dark:divide-slate-700">
+                                {% for cmd in commandes_reelles %}
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
+                                    <td class="py-4 px-2 font-black">{{ cmd.nom_client }}</td>
+                                    <td class="py-4 px-2 opacity-60">{{ cmd.heure_commande }}</td>
+                                    <td class="py-4 px-2 text-auraBlue">{{ cmd.telephone_client }}</td>
+                                    <td class="py-4 px-2">{{ cmd.nom_produit }}</td>
+                                    <td class="py-4 px-2 font-black">{{ cmd.prix_total }} GNF</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="5" class="py-12 text-center opacity-30 italic">Aucune commande trouvée.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="studio" class="section">
+                <div class="max-w-4xl mx-auto bg-white dark:bg-darkCard p-6 lg:p-10 rounded-[40px] border dark:border-slate-800 shadow-2xl">
+                    <h3 class="font-black italic uppercase mb-8 text-center lg:text-left">Ajouter un nouveau produit 💎</h3>
+                    <form id="addProductForm" action="/merchant/add_product" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6" onsubmit="showLoading()">
+                        
                         <div class="space-y-4">
-                            <select name="categorie" class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500">
-                                <option>Mode</option><option>Electronique</option><option>Beauté</option>
+                            <input type="text" name="nom" placeholder="Nom du produit" required class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue transition-all">
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="number" name="prix" placeholder="Prix (GNF)" required class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue">
+                                <input type="number" name="stock" placeholder="Quantité totale" required class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue">
+                            </div>
+                            <select id="categorySelect" name="categorie" onchange="checkCategory()" required class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue">
+                                <option value="" disabled selected>Choisir une catégorie</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
                             </select>
-                            <textarea name="description" placeholder="Description courte..." rows="3" class="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-xs font-bold outline-none border border-transparent focus:border-blue-500"></textarea>
                         </div>
-                        <button type="submit" class="md:col-span-2 bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Mettre en vente</button>
+
+                        <div class="space-y-4">
+                            <textarea name="description" placeholder="Détails (ex: Produit 100% cuir, garantie 1 an...)" rows="3" class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue"></textarea>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="flex flex-col items-center justify-center w-full min-h-[100px] border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all p-2 text-center">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-auraBlue text-lg mb-1"></i>
+                                    <span class="text-[8px] font-black uppercase text-slate-400">Photo IA Designer</span>
+                                    <input type="file" name="image_produit" accept="image/*" class="hidden" required>
+                                </label>
+                                <label class="flex flex-col items-center justify-center w-full min-h-[100px] border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:bg-slate-50 transition-all p-2 text-center">
+                                    <i class="fa-solid fa-images text-purple-500 text-lg mb-1"></i>
+                                    <span class="text-[8px] font-black uppercase text-slate-400">Autres Photos</span>
+                                    <input type="file" name="images_details" accept="image/*" multiple class="hidden">
+                                </label>
+                            </div>
+                            <div class="col-span-1">
+                                <label class="flex flex-col items-center justify-center w-full min-h-[80px] border-2 border-dashed border-red-200 dark:border-red-900/30 bg-red-50/30 dark:bg-red-500/5 rounded-2xl cursor-pointer hover:bg-red-50 transition-all p-2 text-center group">
+                                    <i class="fa-solid fa-circle-play text-red-500 text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                                    <span class="text-[9px] font-black uppercase text-red-600">Vidéo de présentation 🎬</span>
+                                    <p class="text-[7px] text-slate-400 mt-1 italic">Poste direct sur YouTube Pro</p>
+                                    <input type="file" name="video_produit" accept="video/*" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="mode-options" class="hidden md:col-span-2 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 space-y-6">
+                            <div id="sizes-section">
+                                <p id="size-label" class="text-[10px] font-black uppercase text-auraBlue mb-3 italic flex items-center">
+                                    <i class="fa-solid fa-ruler-combined mr-2"></i> Tailles / Pointures disponibles
+                                </p>
+                                <div id="sizes-container" class="flex flex-wrap gap-2">
+                                    </div>
+                            </div>
+                            
+                            <div id="colors-section">
+                                <p class="text-[10px] font-black uppercase text-purple-500 mb-3 italic flex items-center">
+                                    <i class="fa-solid fa-palette mr-2"></i> Couleurs disponibles
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for c in ['Noir', 'Blanc', 'Rouge', 'Bleu', 'Vert', 'Jaune', 'Rose', 'Marron', 'Or', 'Argent'] %}
+                                    <label class="cursor-pointer group">
+                                        <input type="checkbox" name="couleurs[]" value="{{c}}" class="hidden peer">
+                                        <span class="px-4 py-2 bg-white dark:bg-darkCard border dark:border-slate-700 rounded-xl text-[10px] font-black peer-checked:bg-purple-500 peer-checked:text-white transition-all block group-active:scale-90">
+                                            {{c}}
+                                        </span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="submitBtn" class="md:col-span-2 bg-auraBlue text-white p-5 rounded-[2rem] font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:scale-[1.02] transition-all flex items-center justify-center">
+                            <span id="btnText">Lancer le Designer IA & Publier 🚀</span>
+                            <div id="btnLoader" class="hidden loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 ml-3"></div>
+                        </button>
                     </form>
                 </div>
             </div>
 
             <div id="inventory" class="section">
-                <div class="bg-white dark:bg-darkCard p-8 rounded-[40px] border border-slate-100 dark:border-slate-700">
-                    <h2 class="text-lg font-black uppercase italic mb-8">Gestion des stocks</h2>
-                    <div class="space-y-4">
-                        {% if produits %}
-                            {% for p in produits %}
-                            <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-700">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 bg-blue-600/10 text-blue-600 rounded-2xl flex items-center justify-center font-black">#ID</div>
-                                    <div>
-                                        <p class="text-xs font-black uppercase">{{ p.nom }}</p>
-                                        <p class="text-[10px] text-slate-400 font-bold">STK: {{ p.stock or '0' }} | {{ p.prix }} FCFA</p>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2">
-                                    <a href="/merchant/edit/{{p.id}}" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm"><i class="fa-solid fa-pen-to-square text-blue-500"></i></a>
-                                    <a href="/merchant/delete_product/{{p.id}}" class="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm"><i class="fa-solid fa-trash text-red-500"></i></a>
-                                </div>
+                <h3 class="font-black italic uppercase mb-8 text-auraBlue">Gérer vos produits 📦</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for p in produits %}
+                    <div class="bg-white dark:bg-darkCard p-4 rounded-[30px] border dark:border-slate-800 shadow-sm flex flex-col">
+                        <img src="{{ p.image_url }}" class="w-full img-square rounded-2xl mb-4 shadow-md">
+                        <div class="px-2 flex-1">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-black uppercase text-[11px] leading-tight">{{ p.nom }}</h4>
+                                <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-[8px] font-black">{{ p.categorie }}</span>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-center py-10 opacity-50 italic">Aucun produit en ligne.</p>
-                        {% endif %}
+                            <p class="text-lg font-black italic text-auraBlue mb-4">{{ p.prix }} GNF</p>
+                        </div>
+                        
+                        <div class="p-2 bg-slate-50 dark:bg-slate-800 rounded-2xl flex justify-between items-center mt-auto gap-3">
+                            <span class="text-[9px] font-bold opacity-60 uppercase">En stock : {{ p.stock }}</span>
+                            <div class="flex gap-2">
+                                <a href="/merchant/edit_product/{{p.id}}" class="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-xs hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+                                <a href="/merchant/delete_product/{{p.id}}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')" class="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-full text-xs hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
 
-            <div id="analytics" class="section">
-                <div class="bg-white dark:bg-darkCard p-8 rounded-[40px] border border-slate-100 dark:border-slate-700">
-                    <h2 class="text-lg font-black uppercase italic mb-8">Performance Commerciale</h2>
-                    <canvas id="salesChart" height="150"></canvas>
+            <div id="wallet" class="section">
+                <div class="max-w-md mx-auto bg-white dark:bg-darkCard p-8 lg:p-12 rounded-[50px] border dark:border-slate-800 text-center shadow-xl">
+                    <div class="w-16 h-16 bg-blue-100 dark:bg-blue-500/10 text-auraBlue rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fa-solid fa-wallet text-2xl"></i>
+                    </div>
+                    <p class="text-[10px] font-black uppercase text-slate-400 mb-2">Argent disponible</p>
+                    <h3 class="text-4xl lg:text-5xl font-black mb-10 italic text-slate-900 dark:text-white">{{ total_ca or 0 }} <span class="text-sm">GNF</span></h3>
+                    <button class="w-full bg-auraBlue text-white p-5 rounded-full font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Récupérer mon argent</button>
                 </div>
             </div>
 
-        </div>
+        </main>
     </div>
 
     <script>
-        // DARK MODE LOGIC
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
-            if (document.body.classList.contains('dark')) {
-                document.body.classList.remove('dark');
-                icon.className = 'fa-solid fa-moon';
-                localStorage.theme = 'light';
+        // LOGIQUE DYNAMIQUE POUR LE FORMULAIRE SELON LA CATÉGORIE
+        function checkCategory() {
+            const select = document.getElementById('categorySelect');
+            const modeOptions = document.getElementById('mode-options');
+            const sizesContainer = document.getElementById('sizes-container');
+            const sizeLabel = document.getElementById('size-label');
+            const val = select.value;
+
+            // Définition des listes de tailles
+            const habillageTailles = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
+            const chaussuresTailles = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+            const bijouxTailles = ['Standard', 'Réglable', '48', '50', '52', '54', '56'];
+
+            let activeTailles = [];
+            let isMode = false;
+
+            if (val.includes("HABITS")) {
+                activeTailles = habillageTailles;
+                sizeLabel.innerHTML = '<i class="fa-solid fa-shirt mr-2"></i> Tailles disponibles';
+                isMode = true;
+            } else if (val.includes("CHAUSSURES")) {
+                activeTailles = chaussuresTailles;
+                sizeLabel.innerHTML = '<i class="fa-solid fa-shoe-prints mr-2"></i> Pointures disponibles';
+                isMode = true;
+            } else if (val.includes("BIJOUX")) {
+                activeTailles = bijouxTailles;
+                sizeLabel.innerHTML = '<i class="fa-solid fa-ring mr-2"></i> Tailles Bijoux';
+                isMode = true;
+            } else if (val.includes("SACS")) {
+                activeTailles = []; // Pas de tailles pour les sacs, juste des couleurs
+                isMode = true;
+            }
+
+            if (isMode) {
+                modeOptions.classList.remove('hidden');
+                // Générer les boutons de tailles
+                sizesContainer.innerHTML = activeTailles.map(t => `
+                    <label class="cursor-pointer group">
+                        <input type="checkbox" name="tailles[]" value="${t}" class="hidden peer">
+                        <span class="px-4 py-2 bg-white dark:bg-darkCard border dark:border-slate-700 rounded-xl text-[10px] font-black peer-checked:bg-auraBlue peer-checked:text-white transition-all block group-active:scale-90">
+                            ${t}
+                        </span>
+                    </label>
+                `).join('');
+                
+                // Si pas de tailles (ex: Sacs), on cache juste la section taille mais on laisse les couleurs
+                document.getElementById('sizes-section').style.display = activeTailles.length > 0 ? 'block' : 'none';
             } else {
-                document.body.classList.add('dark');
-                icon.className = 'fa-solid fa-sun';
-                localStorage.theme = 'dark';
+                modeOptions.classList.add('hidden');
             }
         }
 
-        // NAVIGATION LOGIC
+        function showLoading() {
+            const btn = document.getElementById('submitBtn');
+            const text = document.getElementById('btnText');
+            const loader = document.getElementById('btnLoader');
+            
+            btn.disabled = true;
+            btn.classList.add('opacity-70', 'cursor-not-allowed');
+            text.innerText = 'IA Designer en cours...';
+            loader.classList.remove('hidden');
+        }
+
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.getElementById('section-title').innerText = id.replace('dashboard', 'Tableau de bord');
+            const target = document.getElementById(id);
+            if(target) target.classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('bg-auraBlue', 'text-white', 'font-black', 'shadow-lg');
+                b.classList.add('text-slate-500', 'font-bold');
+            });
+            
+            const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(id));
+            if (btn) {
+                btn.classList.add('bg-auraBlue', 'text-white', 'font-black', 'shadow-lg');
+                btn.classList.remove('text-slate-500', 'font-bold');
+            }
+
+            const titles = {
+                'analytics': 'Votre résumé',
+                'studio': 'Ajouter un produit',
+                'inventory': 'Gérer vos stocks',
+                'molo-molo': 'Molo-Molo',
+                'history': 'Liste des commandes',
+                'wallet': 'Mon Argent'
+            };
+            document.getElementById('section-title').innerText = titles[id] || 'Aura Pro';
             if(window.innerWidth < 1024) toggleMenu();
         }
 
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('-translate-x-full');
+            const overlay = document.getElementById('overlay');
+            if(sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('show');
+            }
         }
 
-        // CHART LOGIC
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-                datasets: [{
-                    label: 'Ventes FCFA',
-                    data: [12000, 19000, 3000, 50000, 20000, 30000, 45000],
-                    borderColor: '#2563eb',
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)'
-                }]
-            },
-            options: { plugins: { legend: { display: false } } }
-        });
-
-        // Load Theme on start
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.body.classList.add('dark');
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         }
+
+        function initCharts() {
+            const canvas = document.getElementById('businessChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                    datasets: [{
+                        label: 'Ventes',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: '#2563eb',
+                        borderRadius: 10,
+                        barThickness: 12
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, border: { display: false } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, border: { display: false } }
+                    }
+                }
+            });
+        }
+        window.onload = initCharts;
     </script>
 </body>
 </html>

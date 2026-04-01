@@ -8,3 +8,6 @@ flet
 mcp
 python-dotenv
 supabase
+cloudinary
+rembg
+requests

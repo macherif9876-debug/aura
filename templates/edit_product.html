@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA PRO - Modifier Produit ✏️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { darkBg: '#0f172a', darkCard: '#1e293b', auraBlue: '#2563eb' } } }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-white min-h-screen p-4 lg:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <a href="/merchant" class="inline-flex items-center text-slate-500 hover:text-auraBlue mb-6 font-bold transition-colors">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Retour au tableau de bord
+        </a>
+
+        <div class="bg-white dark:bg-darkCard p-6 lg:p-10 rounded-[40px] border dark:border-slate-800 shadow-2xl">
+            <h3 class="font-black italic uppercase mb-8 text-2xl">Modifier le produit ✏️</h3>
+            
+            <form action="/merchant/edit_product/{{ produit.id }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div class="space-y-4">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 px-2">Nom du produit</label>
+                    <input type="text" name="nom" value="{{ produit.nom }}" required 
+                           class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue transition-all">
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 px-2">Prix (GNF)</label>
+                            <input type="number" name="prix" value="{{ produit.prix }}" required 
+                                   class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 px-2">Stock</label>
+                            <input type="number" name="stock" value="{{ produit.stock }}" required 
+                                   class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue">
+                        </div>
+                    </div>
+
+                    <label class="block text-[10px] font-black uppercase text-slate-400 px-2">Catégorie actuelle : {{ produit.categorie }}</label>
+                    <select name="categorie" class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue">
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == produit.categorie %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="space-y-4">
+                    <label class="block text-[10px] font-black uppercase text-slate-400 px-2">Description</label>
+                    <textarea name="description" rows="4" 
+                              class="w-full bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl text-xs font-bold outline-none border-2 border-transparent focus:border-auraBlue">{{ produit.description }}</textarea>
+                    
+                    <div class="p-4 bg-blue-50 dark:bg-blue-500/5 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                        <p class="text-[10px] font-black text-auraBlue uppercase mb-2">Image actuelle</p>
+                        <div class="flex items-center gap-4">
+                            <img src="{{ produit.image_url }}" class="w-16 h-16 rounded-xl object-cover shadow-sm">
+                            <label class="flex-1 cursor-pointer bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 p-3 rounded-xl text-center hover:bg-slate-50 transition-all">
+                                <span class="text-[9px] font-black uppercase text-slate-400">Changer l'image</span>
+                                <input type="file" name="image_produit" accept="image/*" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="md:col-span-2 bg-auraBlue text-white p-5 rounded-[2rem] font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition-all">
+                    Enregistrer les modifications ✅
+                </button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

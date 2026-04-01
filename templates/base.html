@@ -2,64 +2,569 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}AURA{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+    <style>
+        :root { --bg-app: #F8FAFC; --bg-card: white; --text-main: #1A1A1A; --border-color: #f1f1f1; }
+        body.dark-mode { --bg-app: #0f172a; --bg-card: #1e293b; --text-main: #f8fafc; --border-color: #334155; background-color: var(--bg-app); color: var(--text-main); }
+        body.dark-mode .bg-white, body.dark-mode .bg-gray-50, body.dark-mode .product-item, body.dark-mode .category-card, body.dark-mode div[class*="bg-white"], body.dark-mode div[class*="bg-gray-50"] { background-color: var(--bg-card) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-black { color: #e2e8f0 !important; }
+        body.dark-mode .text-gray-500, body.dark-mode .text-gray-400 { color: #94a3b8 !important; }
+        body.dark-mode .app-header, body.dark-mode .bottom-nav, body.dark-mode #productSheet, body.dark-mode #searchSection, body.dark-mode .footer-actions, body.dark-mode #sheetContent { background-color: var(--bg-card) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
+        body.dark-mode .size-chip, body.dark-mode .color-chip { background-color: #334155; border-color: var(--border-color); color: #f8fafc; }
+        body.dark-mode input { color: white !important; }
 
-    <header class="app-header">
-        <div class="flex justify-between items-center mb-2">
-            <div class="logo-aura">AURA</div>
-            <div class="flex gap-4 items-center">
-                <button onclick="toggleTheme()" class="text-xl"></button>
-                <div class="text-xl relative inline-flex">
+        #productSheet, #searchSection { position: fixed; inset: 0; top: 100%; background: white; z-index: 2000; transition: top 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); overflow-y: auto; }
+        #productSheet.active, #searchSection.active { top: 0; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #f1f1f1; z-index: 1500; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-size: 10px; font-weight: 700; text-decoration: none; position: relative; }
+        .nav-item.active { color: #2563eb; }
+        .nav-icon { font-size: 20px; margin-bottom: 2px; }
+        .cart-badge { position: absolute; top: -5px; right: -8px; background: #ef4444; color: white; font-size: 9px; font-weight: 900; height: 18px; width: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        .badge-promo { background: #ffebed; color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 900; }
+        .stock-container { width: 100%; margin-top: 10px; }
+        .stock-bar-bg { width: 100%; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; }
+        .stock-bar-fill { height: 100%; background: #f68b1e; border-radius: 10px; transition: width 0.8s ease; }
+
+        .footer-actions { position: sticky; bottom: 0; padding: 15px; background: white; display: flex; gap: 10px; border-top: 1px solid #eee; z-index: 100; }
+        .btn-action { height: 54px; flex: 1; display: flex; align-items: center; justify-content: center; border-radius: 14px; font-weight: 900; font-size: 13px; text-transform: uppercase; transition: all 0.2s; }
+        .btn-add-cart { background: #f68b1e; color: white; }
+        .btn-add-cart:active { background: #e67e17; transform: scale(0.96); }
+        .btn-molo { background: #1A1A1A; color: white; }
+        .size-chip, .color-chip { border: 1.5px solid #eee; padding: 8px 15px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .size-chip.active, .color-chip.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+
+        /* ── PHOTO MARCHAND DANS LE DÉTAIL ── */
+        .merchant-detail-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #f8fafc;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #f1f5f9;
+        }
+        .merchant-avatar-detail {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            background: #1e293b;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 900; color: white;
+            flex-shrink: 0;
+        }
+        .merchant-avatar-detail img { width: 100%; height: 100%; object-fit: cover; }
+        .merchant-detail-info { min-width: 0; }
+        .merchant-detail-name { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; }
+        .merchant-detail-label { font-size: 9px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#1A1A1A]" data-connecte="{{ 'true' if session.get('user_id') else 'false' }}">
+
+    <header class="app-header p-4 bg-white/80 backdrop-blur-md sticky top-0 z-[1000] border-b border-gray-100">
+        <div class="flex justify-between items-center">
+            <div class="logo-aura font-black italic text-2xl text-blue-600 tracking-tighter">AURA</div>
+            <div class="flex items-center gap-4">
+                <div onclick="openSearch()" class="text-xl cursor-pointer">🔍</div>
+                <div onclick="toggleTheme()" id="themeBtn" class="text-xl cursor-pointer">🌓</div>
+                <a href="/compte" onclick="event.preventDefault(); window.location.href='/compte#messages';"
+                   class="text-xl relative cursor-pointer" style="text-decoration:none;" title="Notifications">
                     🔔
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                    <span id="notif-badge"
+                          style="position:absolute;top:-5px;right:-8px;
+                                 background:#ef4444;color:white;font-size:9px;font-weight:900;
+                                 height:18px;min-width:18px;border-radius:50%;
+                                 display:none;align-items:center;justify-content:center;
+                                 border:2px solid white;padding:0 3px;">
                         0
                     </span>
-                </div>
+                </a>
             </div>
-        </div>
-        
-        <div class="search-container-pro">
-            <span class="text-gray-400 mr-2">🔍</span>
-            <input type="text" id="searchInput" placeholder="Rechercher sur AURA..." class="w-full bg-transparent border-none outline-none text-sm">
         </div>
     </header>
 
-    <main class="pb-24">
+    <div id="searchSection" class="no-scrollbar">
+        <div class="p-4 border-b flex flex-col gap-3">
+            <div class="flex items-center gap-3">
+                <button onclick="closeSearch()" class="text-xl"><i class="fas fa-arrow-left"></i></button>
+                <div class="flex-1 bg-gray-100 p-3 rounded-2xl flex items-center">
+                    <span class="mr-2 text-gray-400">🔍</span>
+                    <input type="text" id="searchInput" oninput="doSearch()" placeholder="Rechercher un produit..." class="w-full bg-transparent outline-none text-sm">
+                </div>
+                <label for="imageSearchInput" class="cursor-pointer bg-blue-100 p-3 rounded-2xl text-blue-600">
+                    <i class="fas fa-camera"></i>
+                    <input type="file" id="imageSearchInput" accept="image/*" class="hidden" onchange="doImageSearch(this)">
+                </label>
+            </div>
+        </div>
+        <div id="searchResults" class="p-4 grid grid-cols-2 gap-4">
+            <p id="searchPlaceholder" class="col-span-2 text-gray-400 text-center text-sm mt-10">Commencez à taper pour rechercher avec l'IA Aura...</p>
+        </div>
+    </div>
+
+    <main class="min-h-screen pb-24">
         {% block content %}{% endblock %}
     </main>
 
     <nav class="bottom-nav">
-        <a href="/" class="nav-item-pro {% if request.path == '/' %}active{% endif %}">
-            <span>🏠</span>
-            Accueil
+        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+            <span class="nav-icon">🏠</span><span>Accueil</span>
         </a>
-        <a href="/categories" class="nav-item-pro {% if request.path == '/categories' %}active{% endif %}">
-            <span>🍔</span>
-            Catégories
+        <a href="/categories" class="nav-item {% if request.path == '/categories' %}active{% endif %}">
+            <span class="nav-icon">🍔</span><span>Rayons</span>
         </a>
-        
-        <a href="/panier" class="nav-item-pro {% if request.path == '/panier' %}active{% endif %}">
-            <div class="relative inline-flex">
-                <span>🛒</span>
-                <span class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
-                    {{ cart_count if cart_count else 0 }}
-                </span>
+        <a href="/videos" class="nav-item {% if request.path == '/videos' %}active{% endif %}">
+            <span class="nav-icon">🎬</span><span>Vidéos</span>
+        </a>
+        <a href="/panier" class="nav-item {% if request.path == '/panier' %}active{% endif %}">
+            <div class="relative">
+                <span class="nav-icon">🛒</span>
+                <span id="global-cart-count" class="cart-badge hidden">0</span>
             </div>
-            Panier
+            <span>Panier</span>
         </a>
-
-        <a href="/compte" class="nav-item-pro {% if request.path == '/compte' %}active{% endif %}">
-            <span>👤</span>
-            Compte
+        <a href="/compte" class="nav-item {% if request.path == '/compte' %}active{% endif %}">
+            <span class="nav-icon">👤</span><span>Compte</span>
         </a>
     </nav>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <!-- ══ FICHE PRODUIT (base.html) ══ -->
+    <div id="productSheet" class="no-scrollbar">
+        <div class="sticky top-0 bg-white/95 backdrop-blur-md px-4 py-4 flex items-center justify-between border-b z-[2100]">
+            <button onclick="closeProduct()" class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full"><i class="fas fa-arrow-left"></i></button>
+            <span id="headerNom" class="font-black text-[11px] uppercase truncate max-w-[150px]">Détails</span>
+            <button onclick="shareProduct()" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-full"><i class="fas fa-share-alt"></i></button>
+        </div>
+
+        <div id="sheetContent">
+            <div id="sheetLoader" class="flex flex-col items-center justify-center py-32">
+                <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <div id="productDetails" class="hidden">
+                <div id="detailImagesList" class="flex overflow-x-auto snap-x no-scrollbar h-[350px] bg-white border-b"></div>
+
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 id="detailNom" class="text-2xl font-black text-gray-900 leading-tight uppercase tracking-tighter"></h2>
+                            <div id="promoBadgeContainer" class="mt-2 hidden">
+                                <span class="badge-promo" id="promoPercent">-0%</span>
+                            </div>
+                        </div>
+                        <span class="bg-blue-600 text-white px-3 py-1 rounded-md text-[9px] font-black uppercase">AURA PRO</span>
+                    </div>
+
+                    <!-- ── BLOC MARCHAND (grand, dans le détail) ── -->
+                    <div class="merchant-detail-block" id="merchantBlock" style="display:none;">
+                        <div class="merchant-avatar-detail" id="merchantAvatar">?</div>
+                        <div class="merchant-detail-info">
+                            <p class="merchant-detail-label">Vendu par</p>
+                            <p class="merchant-detail-name" id="merchantName">—</p>
+                        </div>
+                        <div style="margin-left:auto;">
+                            <span style="font-size:9px; background:#f1f5f9; color:#64748b; padding:4px 10px; border-radius:50px; font-weight:900; text-transform:uppercase; letter-spacing:1px;">Boutique</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="flex items-baseline gap-2">
+                            <span id="detailPrix" class="text-3xl font-black text-blue-600"></span>
+                            <span id="oldPrice" class="text-sm text-gray-400 line-through font-bold"></span>
+                        </div>
+                        <div class="stock-container">
+                            <div class="flex justify-between items-center mb-1">
+                                <span id="stockText" class="text-[10px] font-black uppercase text-gray-500">Stock disponible</span>
+                                <span id="stockCount" class="text-[10px] font-black text-orange-500"></span>
+                            </div>
+                            <div class="stock-bar-bg">
+                                <div id="stockBarFill" class="stock-bar-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="colorSection" class="mb-8 hidden">
+                        <h4 class="text-[10px] font-black uppercase mb-3 text-gray-400">Couleurs</h4>
+                        <div id="colorContainer" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <div id="sizeSection" class="mb-8 hidden">
+                        <h4 class="text-[10px] font-black uppercase mb-3 text-gray-400">Tailles</h4>
+                        <div id="sizeContainer" class="flex flex-wrap gap-3"></div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h4 class="text-[10px] font-black uppercase mb-3 border-b pb-2 text-gray-400">Description</h4>
+                        <div id="detailDesc" class="text-sm text-gray-600 font-medium"></div>
+                    </div>
+
+                    <div class="mt-12 mb-10">
+                        <h4 class="text-[11px] font-black uppercase mb-4 text-blue-600 tracking-widest">Articles Similaires</h4>
+                        <div id="similarProducts" class="flex gap-4 overflow-x-auto no-scrollbar pb-6"></div>
+                    </div>
+                </div>
+
+                <div class="footer-actions">
+                    <button id="mainAddBtn" onclick="ajouterAuPanier()" class="btn-action btn-add-cart">
+                        <i class="fas fa-shopping-bag mr-2"></i> Ajouter au Panier
+                    </button>
+                    <button class="btn-action btn-molo">Molo Molo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('aura_theme', isDark ? 'dark' : 'light');
+            document.getElementById('themeBtn').innerText = isDark ? '☀️' : '🌓';
+        }
+        if (localStorage.getItem('aura_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeBtn').innerText = '☀️';
+        }
+
+        let currentProduct = null;
+        let searchTimeout = null;
+
+        function doSearch() {
+            const query = document.getElementById('searchInput').value;
+            const resultsContainer = document.getElementById('searchResults');
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '<p class="col-span-2 text-gray-400 text-center text-sm mt-10">Commencez à taper...</p>';
+                return;
+            }
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetch(`/recherche?q=${encodeURIComponent(query)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const products = doc.querySelectorAll('.product-item');
+                    resultsContainer.innerHTML = "";
+                    if (products.length === 0) {
+                        resultsContainer.innerHTML = '<p class="col-span-2 text-center py-10">Aucun produit trouvé.</p>';
+                    } else {
+                        products.forEach(p => {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = "product-card-search";
+                            wrapper.innerHTML = p.outerHTML;
+                            resultsContainer.appendChild(wrapper);
+                        });
+                    }
+                });
+            }, 300);
+        }
+
+        function doImageSearch(input) {
+            if (!input.files || !input.files[0]) return;
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '<div class="col-span-2 text-center py-10"><div class="animate-spin inline-block w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full"></div><p class="text-xs mt-2">L\'IA analyse votre image...</p></div>';
+            const formData = new FormData();
+            formData.append('image_search', input.files[0]);
+            fetch('/recherche', { method: 'POST', body: formData })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const products = doc.querySelectorAll('.product-item');
+                resultsContainer.innerHTML = "";
+                products.forEach(p => {
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = p.outerHTML;
+                    resultsContainer.appendChild(wrapper);
+                });
+            });
+        }
+
+        function updateCartBadge() {
+            fetch('/api/panier_count')
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('global-cart-count');
+                    const totalItems = data.count || 0;
+                    if (totalItems > 0) { badge.innerText = totalItems; badge.classList.remove('hidden'); }
+                    else { badge.classList.add('hidden'); }
+                }).catch(() => {});
+        }
+
+        function openSearch() { document.getElementById('searchSection').classList.add('active'); document.getElementById('searchInput').focus(); document.body.style.overflow = 'hidden'; }
+        function closeSearch() { document.getElementById('searchSection').classList.remove('active'); document.body.style.overflow = ''; }
+
+        function ajouterAuPanier() {
+            if (!currentProduct) return;
+            const taille = document.querySelector('.size-chip.active')?.innerText || null;
+            const couleur = document.querySelector('.color-chip.active')?.innerText || null;
+            fetch('/api/ajouter_au_panier', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: currentProduct.id, prix: currentProduct.prix, taille, couleur })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    const btn = document.getElementById('mainAddBtn');
+                    btn.innerHTML = "✅ Ajouté !";
+                    btn.style.background = "#22c55e";
+                    updateCartBadge();
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fas fa-shopping-bag mr-2"></i> Ajouter au Panier';
+                        btn.style.background = "#f68b1e";
+                        closeProduct();
+                    }, 800);
+                }
+            });
+        }
+
+        function openProduct(id) {
+            if(!id) return;
+            const sheet = document.getElementById('productSheet');
+            sheet.classList.add('active');
+            sheet.scrollTo(0, 0);
+            document.body.style.overflow = 'hidden';
+            document.getElementById('productDetails').classList.add('hidden');
+            document.getElementById('sheetLoader').classList.remove('hidden');
+
+            fetch(`/api/product/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    currentProduct = data;
+                    renderProductDetails(data);
+                    loadSimilarProducts(data.categorie, id);
+                }).catch(() => closeProduct());
+        }
+
+        function renderProductDetails(data) {
+            document.getElementById('detailNom').innerText = data.nom;
+            document.getElementById('headerNom').innerText = data.nom;
+            document.getElementById('detailPrix').innerText = data.prix ? data.prix.toLocaleString() + " FCFA" : "0 FCFA";
+            document.getElementById('detailDesc').innerHTML = data.description || "Article Premium AURA.";
+
+            const oldPriceEl = document.getElementById('oldPrice');
+            const promoContainer = document.getElementById('promoBadgeContainer');
+            if (data.ancien_prix && data.ancien_prix > data.prix) {
+                const percent = Math.round(((data.ancien_prix - data.prix) / data.ancien_prix) * 100);
+                oldPriceEl.innerText = data.ancien_prix.toLocaleString() + " FCFA";
+                document.getElementById('promoPercent').innerText = `-${percent}%`;
+                promoContainer.classList.remove('hidden');
+            } else {
+                oldPriceEl.innerText = "";
+                promoContainer.classList.add('hidden');
+            }
+
+            // ── PHOTO MARCHAND dans le détail ──
+            const merchantBlock  = document.getElementById('merchantBlock');
+            const merchantAvatar = document.getElementById('merchantAvatar');
+            const merchantName   = document.getElementById('merchantName');
+            // L'API retourne data.profil (jointure Supabase)
+            const profil = data.profil;
+            if (profil && (profil.nom_boutique || profil.photo_url)) {
+                merchantBlock.style.display = 'flex';
+                merchantName.innerText = profil.nom_boutique || 'Boutique Aura';
+                if (profil.photo_url) {
+                    merchantAvatar.innerHTML = `<img src="${profil.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                    merchantAvatar.style.background = 'transparent';
+                } else {
+                    const initiale = (profil.nom_boutique || 'A')[0].toUpperCase();
+                    merchantAvatar.textContent = initiale;
+                    merchantAvatar.style.background = '#1e293b';
+                }
+            } else {
+                merchantBlock.style.display = 'none';
+            }
+
+            const stockRestant = data.stock || 0;
+            const stockTotal = data.stock_total || (stockRestant > 0 ? stockRestant : 100);
+            const percentStock = (stockRestant / stockTotal) * 100;
+            document.getElementById('stockBarFill').style.width = percentStock + "%";
+            document.getElementById('stockCount').innerText = `${stockRestant} restants`;
+
+            const list = document.getElementById('detailImagesList');
+            list.innerHTML = `<img src="${data.image_url}" class="w-full flex-shrink-0 object-contain snap-center p-4">`;
+            if(data.images_details) {
+                data.images_details.forEach(img => {
+                    list.innerHTML += `<img src="${img.image_url}" class="w-full flex-shrink-0 object-contain snap-center p-4">`;
+                });
+            }
+            handleVariations(data.variantes);
+            document.getElementById('sheetLoader').classList.add('hidden');
+            document.getElementById('productDetails').classList.remove('hidden');
+        }
+
+        function handleVariations(variantes) {
+            const sCont = document.getElementById('sizeContainer');
+            const cCont = document.getElementById('colorContainer');
+            sCont.innerHTML = ""; cCont.innerHTML = "";
+            const sizes = [...new Set(variantes?.map(v => v.taille).filter(t => t))];
+            const colors = [...new Set(variantes?.map(v => v.couleur).filter(c => c))];
+            if(sizes.length > 0) {
+                document.getElementById('sizeSection').classList.remove('hidden');
+                sizes.forEach(s => {
+                    const el = document.createElement('div'); el.className="size-chip"; el.innerText=s;
+                    el.onclick = () => { document.querySelectorAll('.size-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); };
+                    sCont.appendChild(el);
+                });
+            } else { document.getElementById('sizeSection').classList.add('hidden'); }
+            if(colors.length > 0) {
+                document.getElementById('colorSection').classList.remove('hidden');
+                colors.forEach(c => {
+                    const el = document.createElement('div'); el.className="color-chip"; el.innerText=c;
+                    el.onclick = () => { document.querySelectorAll('.color-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); };
+                    cCont.appendChild(el);
+                });
+            } else { document.getElementById('colorSection').classList.add('hidden'); }
+        }
+
+        function loadSimilarProducts(category, currentId) {
+            const container = document.getElementById('similarProducts');
+            container.innerHTML = "";
+            fetch(`/categories?cat=${encodeURIComponent(category)}`)
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const products = doc.querySelectorAll('.product-item');
+                    products.forEach((p, idx) => {
+                        if (idx < 6) {
+                            const card = document.createElement('div');
+                            card.className = "flex-shrink-0 w-[140px] bg-white rounded-2xl border p-2 cursor-pointer";
+                            card.innerHTML = p.innerHTML;
+                            card.onclick = () => {
+                                const id = p.getAttribute('onclick').match(/'([^']+)'/)[1];
+                                openProduct(id);
+                            };
+                            container.appendChild(card);
+                        }
+                    });
+                });
+        }
+
+        function closeProduct() {
+            document.getElementById('productSheet').classList.remove('active');
+            document.body.style.overflow = '';
+            currentProduct = null;
+        }
+
+        function shareProduct() {
+            if (navigator.share && currentProduct) {
+                navigator.share({ title: currentProduct.nom, text: 'Découvre ce produit sur AURA !', url: window.location.origin + '/share/product/' + currentProduct.id });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartBadge();
+            updateNotifBadge();
+            activerNotificationsPush();
+        });
+
+        /* ══════════════════════════════════════════════════════════
+           BADGE NOTIFICATIONS (cloche dans l'en-tête)
+        ══════════════════════════════════════════════════════════ */
+        async function updateNotifBadge() {
+            try {
+                const res  = await fetch('/api/mes_messages');
+                if (!res.ok) return;
+                const data = await res.json();
+                const nonLus = (data || []).filter(m => !m.lu).length;
+                const badge  = document.getElementById('notif-badge');
+                if (!badge) return;
+                if (nonLus > 0) {
+                    badge.textContent = nonLus > 9 ? '9+' : nonLus;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch(e) {}
+        }
+
+        // Rafraîchir le badge toutes les 30 secondes
+        setInterval(updateNotifBadge, 30000);
+
+        /* ══════════════════════════════════════════════════════════
+           NOTIFICATIONS PUSH — AUTOMATIQUE À LA CONNEXION
+        ══════════════════════════════════════════════════════════ */
+        async function activerNotificationsPush() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                console.log('[PUSH] Non supporté sur ce navigateur');
+                return;
+            }
+
+            // Ne rien faire si l'utilisateur n'est pas connecté
+            const connecte = document.body.dataset.connecte === 'true';
+            if (!connecte) return;
+
+            try {
+                // 1. Enregistrer le service worker
+                await navigator.serviceWorker.register('/static/sw.js');
+
+                // 2. Demander permission AUTOMATIQUEMENT si pas encore décidé
+                if (Notification.permission === 'default') {
+                    await Notification.requestPermission();
+                }
+
+                // 3. Si accordé → s'abonner immédiatement
+                if (Notification.permission === 'granted') {
+                    await sAbonner();
+                }
+
+            } catch(e) {
+                console.log('[PUSH] Erreur:', e.message);
+            }
+        }
+
+        async function sAbonner() {
+            try {
+                const sw = await navigator.serviceWorker.ready;
+
+                // Récupérer clé publique VAPID
+                const res = await fetch('/api/push/cle_publique');
+                const { cle_publique } = await res.json();
+                if (!cle_publique) return;
+
+                // Vérifier si déjà abonné
+                let abo = await sw.pushManager.getSubscription();
+                if (!abo) {
+                    // Créer nouvel abonnement
+                    abo = await sw.pushManager.subscribe({
+                        userVisibleOnly:      true,
+                        applicationServerKey: urlBase64VersUint8Array(cle_publique)
+                    });
+                }
+
+                // Enregistrer en base (idempotent — pas de doublon)
+                await fetch('/api/push/abonner', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(abo)
+                });
+
+                console.log('[PUSH] ✅ Abonnement actif !');
+
+            } catch(e) {
+                console.log('[PUSH] ❌', e.message);
+            }
+        }
+
+        // Convertir la clé VAPID base64 en Uint8Array
+        function urlBase64VersUint8Array(base64) {
+            const rembourrage = '='.repeat((4 - base64.length % 4) % 4);
+            const b64 = (base64 + rembourrage).replace(/-/g, '+').replace(/_/g, '/');
+            const brut = atob(b64);
+            return Uint8Array.from([...brut].map(c => c.charCodeAt(0)));
+        }
+
+    </script>
 </body>
 </html>

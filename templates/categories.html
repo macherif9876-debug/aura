@@ -1,24 +1,59 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .stock-bar-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 4px; }
+    .bar-label-mini { font-size: 7px; font-weight: 900; text-transform: uppercase; margin-top: 6px; display: block; }
+
+    .badge-cat-promo {
+        position: absolute; top: 12px; right: 12px;
+        background: #FFF5ED; color: #F68B1E;
+        font-size: 11px; font-weight: 900;
+        padding: 4px 7px; border-radius: 6px; z-index: 20;
+    }
+
+    /* ── PHOTO MARCHAND SUR CARTE ── */
+    .merchant-avatar-cat {
+        position: absolute;
+        bottom: 76px; right: 10px;
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        border: 2px solid white;
+        overflow: hidden;
+        background: #1e293b;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; font-weight: 900; color: white;
+        z-index: 20;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .merchant-avatar-cat img { width: 100%; height: 100%; object-fit: cover; }
+</style>
+
 <div class="bg-[#F8FAFC] min-h-screen pb-24">
-    
+
     <div id="main-grid" class="px-6 pt-10 space-y-8 transition-all duration-500">
-        <h2 class="text-3xl font-black text-[var(--primary-blue)] italic uppercase">Rayons</h2>
+        <h2 class="text-3xl font-black text-blue-600 italic uppercase">Rayons</h2>
 
         <div class="grid grid-cols-2 gap-4">
-            {% set categories = [
-                ('📱','téléphones et ordinateurs','tech'), ('👗','habits pour femmes','mode_f'), 
-                ('👕','habits pour hommes','mode_h'), ('🛋️','meubles et décoration','deco'), 
-                ('🍳','machines pour la maison','machine'), ('💄','maquillage et parfums','soin'), 
-                ('👶','affaires pour bébés et enfants','bebe'), ('⚽','affaires de sport et voyage','sport'), 
-                ('🔧','pièces pour voitures et motos','auto'), ('🔨','matériel de travail et outils','pro'), 
-                ('⌚','bijoux, sacs et montres','bijoux')
+            {% set categories_data = [
+                ('📱','Téléphones & PC','ÉLECTRONIQUE (TÉLÉPHONES, PC)'),
+                ('👗','Mode Femme','HABITS POUR FEMMES'),
+                ('👕','Mode Homme','HABITS POUR HOMMES'),
+                ('👟','Chaussures','CHAUSSURES HOMMES & FEMMES'),
+                ('👶','Bébés & Enfants','AFFAIRES POUR BÉBÉS ET ENFANTS'),
+                ('⌚','Bijoux & Montres','BIJOUX, MONTRES ET ACCESSOIRES'),
+                ('👜','Sacs','SACS ET MAROQUINERIE'),
+                ('💄','Beauté','BEAUTÉ ET COSMÉTIQUE'),
+                ('🍳','Électroménager','ÉLECTROMÉNAGER (FRIGO, TV)'),
+                ('🛋️','Meubles & Déco','MEUBLES ET DÉCORATION MAISON'),
+                ('🔨','Outils & Travaux','OUTILLAGE ET CONSTRUCTION'),
+                ('🔧','Auto & Pièces','PIÈCES ET VÉHICULES AUTOMOBILES'),
+                ('⚽','Sport & Voyage','SPORT ET VOYAGE')
             ] %}
 
-            {% for emoji, name, slug in categories %}
-            <div onclick="showCategory('{{ slug }}', '{{ name }}')" 
-                 class="relative cursor-pointer group bg-white rounded-[35px] p-6 shadow-sm border border-slate-50 transition-all hover:shadow-xl active:scale-90 aura-category-card {% if loop.index % 3 == 0 %} col-span-2 h-32 {% else %} h-44 {% endif %}">
+            {% for emoji, name, slug in categories_data %}
+            <div onclick="showCategory('{{ slug }}', '{{ name }}')"
+                 class="relative cursor-pointer group bg-white rounded-[35px] p-6 shadow-sm border border-slate-50 transition-all hover:shadow-xl active:scale-90 aura-category-card {% if loop.index % 5 == 0 %} col-span-2 h-32 {% else %} h-44 {% endif %}">
                 <div class="flex flex-col justify-between h-full">
                     <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-xl">{{ emoji }}</div>
                     <span class="block font-black text-[10px] uppercase text-slate-800 leading-tight">{{ name }}</span>
@@ -31,70 +66,126 @@
     <div id="category-view" class="hidden opacity-0 transition-all duration-500 transform translate-y-10">
         <div class="relative w-full aspect-video overflow-hidden rounded-b-[50px] shadow-2xl bg-slate-900">
             <img id="cat-banner-img" src="" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30"></div>
-            
-            <div class="absolute top-6 right-6 flex flex-col items-end gap-2">
-                <div class="bg-white/10 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/20">
-                    <p id="aura-comment" class="text-[9px] text-white font-black italic text-right"></p>
-                </div>
-                <div class="bg-[var(--gold)] px-3 py-1 rounded-lg"><span class="text-[8px] font-black text-black tracking-widest uppercase">AURA OFFICIEL</span></div>
-            </div>
+            <div class="absolute inset-0 bg-gradient-t from-black via-transparent to-black/30"></div>
 
-            <button onclick="hideCategory()" class="absolute top-6 left-6 w-12 h-12 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="absolute top-6 left-6 w-12 h-12 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white cursor-pointer" onclick="hideCategory()">
+                <i class="fa-solid fa-chevron-left"></i>
+            </div>
 
             <div class="absolute bottom-10 left-8">
                 <h2 id="cat-title" class="text-3xl font-black text-white italic tracking-tighter uppercase leading-none"></h2>
             </div>
         </div>
-        <div id="category-products" class="px-6 mt-12 grid grid-cols-2 gap-4"></div>
+
+        <!-- ── GRILLE PRODUITS CATÉGORIE (avec photo marchand) ── -->
+        <div id="category-products" class="px-6 mt-12 grid grid-cols-2 gap-4">
+            {% for p in produits %}
+            <div onclick="openProduct('{{ p.id }}')" class="bg-white rounded-[30px] p-4 shadow-sm border border-slate-50 product-item animate-fade-in cursor-pointer relative">
+
+                {% if p.ancien_prix and p.ancien_prix|float > p.prix|float %}
+                {% set reduction_cat = ((p.ancien_prix|float - p.prix|float) / p.ancien_prix|float * 100) | round | int %}
+                <div class="badge-cat-promo">-{{ reduction_cat }}%</div>
+                {% endif %}
+
+                <div class="relative aspect-square mb-3 overflow-hidden rounded-[20px] bg-white">
+                    <img src="{{ p.image_url }}" class="w-full h-full object-contain p-2">
+                </div>
+
+                <h3 class="text-[10px] font-black uppercase truncate text-slate-800">{{ p.nom }}</h3>
+                <p class="font-black text-sm text-gray-900 mb-2">{{ "{:,.0f}".format(p.prix).replace(',', ' ') }} F</p>
+
+                <hr class="my-2 border-slate-50">
+
+                {% if p.ancien_prix and p.ancien_prix|float > p.prix|float %}
+                    {% set red_val = ((p.ancien_prix|float - p.prix|float) / p.ancien_prix|float * 100) | round | int %}
+                    <span class="bar-label-mini text-red-500">PROMO: -{{ red_val }}%</span>
+                    <div class="stock-bar-container">
+                        <div class="h-full bg-red-500 transition-all duration-1000" style="width: {{ red_val }}%"></div>
+                    </div>
+                {% endif %}
+
+                {% if p.stock_total and p.stock_total > 0 %}
+                    {% set s_percent = (p.stock / p.stock_total * 100) | round | int %}
+                    <span class="bar-label-mini text-blue-600">STOCK: {{ p.stock }}</span>
+                    <div class="stock-bar-container">
+                        <div class="h-full bg-blue-600 transition-all duration-1000" style="width: {{ s_percent }}%"></div>
+                    </div>
+                {% else %}
+                    <span class="bar-label-mini text-gray-400">RUPTURE</span>
+                    <div class="stock-bar-container"><div class="h-full bg-gray-200" style="width: 0%"></div></div>
+                {% endif %}
+
+                <!-- ── Photo marchand (bas-droite) ── -->
+                <div class="merchant-avatar-cat">
+                    {% if p.profil and p.profil.photo_url %}
+                        <img src="{{ p.profil.photo_url }}" alt="">
+                    {% else %}
+                        {{ (p.profil.nom_boutique[0]|upper) if p.profil and p.profil.nom_boutique else '?' }}
+                    {% endif %}
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
 <script>
     const auraUniverse = {
-        'tech': { img: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1200&q=80', msg: '"AURA : Le meilleur des smartphones et ordinateurs high-tech."' },
-        'mode_f': { img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80', msg: '"Élégance féminine sélectionnée par AURA."' },
-        'mode_h': { img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80', msg: '"Le vestiaire masculin idéal validé par AURA."' },
-        'deco': { img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80', msg: '"Meubles et décoration signés AURA."' },
-        'machine': { img: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80', msg: '"Frigos et gazinières : AURA équipe votre maison."' },
-        'soin': { img: 'https://images.unsplash.com/photo-1596462502278-27bfad450216?auto=format&fit=crop&w=1200&q=80', msg: '"Parfums et maquillages exclusifs AURA."' },
-        'bebe': { img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=1200&q=80', msg: '"Le confort de vos enfants, une priorité pour AURA."' },
-        'sport': { img: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80', msg: '"Matériel de sport de qualité AURA."' },
-        'auto': { img: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=80', msg: '"Pièces détachées : AURA prend soin de votre véhicule."' },
-        'pro': { img: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1200&q=80', msg: '"Outils robustes sélectionnés par AURA."' },
-        'bijoux': { img: 'https://images.unsplash.com/photo-1535303311164-664fc9ec6532?auto=format&fit=crop&w=1200&q=80', msg: '"Sacs, montres et bijoux certifiés AURA."' }
+        'ÉLECTRONIQUE (TÉLÉPHONES, PC)': { img: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1200&q=80' },
+        'HABITS POUR FEMMES': { img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80' },
+        'HABITS POUR HOMMES': { img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80' },
+        'CHAUSSURES HOMMES & FEMMES': { img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80' },
+        'AFFAIRES POUR BÉBÉS ET ENFANTS': { img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=1200&q=80' },
+        'BIJOUX, MONTRES ET ACCESSOIRES': { img: 'https://images.unsplash.com/photo-1535303311164-664fc9ec6532?auto=format&fit=crop&w=1200&q=80' },
+        'SACS ET MAROQUINERIE': { img: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1200&q=80' },
+        'BEAUTÉ ET COSMÉTIQUE': { img: 'https://images.unsplash.com/photo-1596462502278-27bfad450216?auto=format&fit=crop&w=1200&q=80' },
+        'ÉLECTROMÉNAGER (FRIGO, TV)': { img: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80' },
+        'MEUBLES ET DÉCORATION MAISON': { img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80' },
+        'OUTILLAGE ET CONSTRUCTION': { img: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1200&q=80' },
+        'PIÈCES ET VÉHICULES AUTOMOBILES': { img: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=80' },
+        'SPORT ET VOYAGE': { img: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80' }
     };
 
     function showCategory(slug, name) {
         const grid = document.getElementById('main-grid');
         const view = document.getElementById('category-view');
-        const data = auraUniverse[slug];
-
+        const productGrid = document.getElementById('category-products');
+        const data = auraUniverse[slug] || { img: '' };
         document.getElementById('cat-banner-img').src = data.img;
         document.getElementById('cat-title').innerText = name;
-        document.getElementById('aura-comment').innerText = data.msg;
+        productGrid.innerHTML = '<div class="col-span-2 text-center py-20"><div class="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>';
 
+        fetch(`/categories?cat=${encodeURIComponent(slug)}`)
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const content = doc.getElementById('category-products').innerHTML;
+                productGrid.innerHTML = content || '<p class="col-span-2 text-center text-gray-400 uppercase text-[10px] font-bold py-10">Bientôt disponible</p>';
+            });
         grid.classList.add('hidden');
         view.classList.remove('hidden');
-        setTimeout(() => { view.classList.remove('opacity-0', 'translate-y-10'); view.classList.add('opacity-100', 'translate-y-0'); }, 50);
-        window.scrollTo(0, 0);
+        setTimeout(() => { view.classList.remove('opacity-0'); view.classList.add('opacity-100'); }, 50);
+        window.scrollTo(0,0);
     }
 
     function hideCategory() {
-        const grid = document.getElementById('main-grid');
-        const view = document.getElementById('category-view');
-        view.classList.add('opacity-0', 'translate-y-10');
-        setTimeout(() => { view.classList.add('hidden'); grid.classList.remove('hidden'); }, 300);
+        document.getElementById('category-view').classList.add('hidden');
+        document.getElementById('main-grid').classList.remove('hidden');
     }
 
-    // GESTION DU CLIC DEPUIS L'ACCUEIL
-    window.onload = function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const openSlug = urlParams.get('open');
-        if (openSlug) {
-            const names = { 'tech': 'téléphones et ordinateurs', 'mode_f': 'habits pour femmes', 'mode_h': 'habits pour hommes', 'deco': 'meubles et décoration', 'machine': 'machines pour la maison', 'soin': 'maquillage et parfums', 'bebe': 'affaires pour bébés et enfants', 'sport': 'affaires de sport et voyage', 'auto': 'pièces pour voitures et motos', 'pro': 'matériel de travail et outils', 'bijoux': 'bijoux, sacs et montres' };
-            if (names[openSlug]) showCategory(openSlug, names[openSlug]);
+    window.onload = () => {
+        const params = new URLSearchParams(window.location.search);
+        const cat = params.get('cat');
+        if(cat) {
+            const name = Object.keys(auraUniverse).find(k => k === cat) || cat;
+            showCategory(cat, name);
         }
-    };
+    }
+
+    function openProduct(id) {
+        window.location.href = "/share/product/" + id;
+    }
 </script>
 {% endblock %}

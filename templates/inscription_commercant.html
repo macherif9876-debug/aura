@@ -6,32 +6,53 @@
             <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
                 <i class="fa-solid fa-id-card"></i>
             </div>
-            <h1 class="text-2xl font-black italic uppercase italic tracking-tighter">Vérification Aura</h1>
+            <h1 class="text-2xl font-black italic uppercase tracking-tighter">Vérification Aura</h1>
             <p class="text-slate-400 text-xs font-bold">Sécurisez votre compte vendeur</p>
         </div>
 
-        <form method="POST" class="space-y-6" id="merchantForm">
+        <form method="POST" action="{{ url_for('inscription_commercant') }}" enctype="multipart/form-data" class="space-y-6" id="merchantForm">
             <div class="bg-blue-50 p-4 rounded-2xl text-[10px] text-blue-700 font-bold leading-relaxed">
-                <i class="fa-solid fa-circle-info mr-2"></i> Pour devenir commerçant, vous devez uploader une photo nette de votre CNI (Recto/Verso) et un selfie avec celle-ci.
+                <i class="fa-solid fa-circle-info mr-2"></i> Informations professionnelles requises pour la validation de votre boutique.
             </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Nom de la Boutique</label>
+                    <input type="text" name="nom_boutique" required placeholder="Ex: Aura Fashion" class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Numéro WhatsApp</label>
+                    <input type="tel" name="telephone" required placeholder="+221 ..." class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Numéro CNI / Passeport</label>
+                    <input type="text" name="num_cni" required placeholder="Ex: 175..." class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Adresse de la Boutique</label>
+                    <input type="text" name="adresse_boutique" required placeholder="Ex: Dakar, Plateau..." class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
 
             <div class="space-y-4">
                 <div class="relative group">
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">CNI Recto (Devant)</label>
-                    <input type="file" required accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-slate-900 file:text-white">
+                    <input type="file" name="cni_recto" required accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-slate-900 file:text-white">
                 </div>
                 <div class="relative group">
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">CNI Verso (Arrière)</label>
-                    <input type="file" required accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-slate-900 file:text-white">
+                    <input type="file" name="cni_verso" required accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-slate-900 file:text-white">
                 </div>
                 <div class="relative group">
                     <label class="block text-[10px] font-black uppercase text-slate-400 mb-2">Selfie avec CNI</label>
-                    <input type="file" required accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white">
+                    <input type="file" name="selfie_cni" required accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white">
                 </div>
             </div>
 
             <button type="submit" class="w-full py-5 bg-black text-white rounded-3xl font-black uppercase text-sm tracking-widest hover:bg-blue-600 transition-all mt-6">
-                Activer ma boutique
+                Envoyer pour validation
             </button>
         </form>
     </div>
@@ -39,10 +60,9 @@
 
 <script>
     document.getElementById('merchantForm').onsubmit = function(e) {
-        // Simulation de validation JS
         const btn = this.querySelector('button');
-        btn.innerHTML = "VÉRIFICATION EN COURS...";
-        btn.disabled = true;
+        btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin mr-2'></i> ENVOI DES DOCUMENTS...";
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
     };
 </script>
 {% endblock %}
