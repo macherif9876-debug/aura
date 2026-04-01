@@ -168,26 +168,17 @@ def upload_to_github(file_storage):
         logging.error(f"Erreur GitHub Intelligent: {e}")
         return None
 
-# --- FONCTION IA (SUPPRESSION ARRIÈRE-PLAN) ---
+# --- UPLOAD DIRECT (sans suppression arrière-plan) ---
 def designer_automatique_ia(file_storage):
+    """Retourne le fichier directement — rembg supprimé pour alléger le déploiement"""
     try:
         file_storage.seek(0)
-        input_image = Image.open(file_storage)
-        output_image = remove(input_image)
-        background = Image.new("RGB", output_image.size, (255, 255, 255))
-        if output_image.mode == 'RGBA':
-            background.paste(output_image, mask=output_image.split()[3])
-        else:
-            background.paste(output_image)
-        img_byte_arr = io.BytesIO()
-        background.save(img_byte_arr, format='JPEG', quality=95)
-        img_byte_arr.seek(0)
-        return img_byte_arr
+        return file_storage
     except Exception as e:
-        logging.error(f"Erreur Designer IA: {e}")
+        logging.error(f"Erreur upload image: {e}")
         file_storage.seek(0)
-        return file_storage 
-
+        return file_storage
+        
 CATEGORIES_LIST = [
     "ÉLECTRONIQUE (TÉLÉPHONES, PC)", "HABITS POUR FEMMES", "HABITS POUR HOMMES",
     "CHAUSSURES HOMMES & FEMMES", "AFFAIRES POUR BÉBÉS ET ENFANTS",
