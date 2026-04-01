@@ -3,11 +3,12 @@ import subprocess
 import requests
 
 # 1. PARAMÈTRES
-# Récupération automatique de ton token avec le bon nom de secret
 token = os.environ.get('GH_TOKEN_1')
+username = "macherif9876-debug"
 
-username = "macherif9876-debug"  # Ton pseudo GitHub
-repo_name = "BCBPG_PROJET"        # Le nom du dépôt qui va être créé
+# C'est ici que j'ai mis le nom de ton projet !
+repo_name = "aura"  
+
 email = "ton.email@exemple.com"  # Met ton vrai email GitHub ici
 
 # 2. FONCTION POUR EXÉCUTER LES COMMANDES SANS LE TERMINAL
@@ -16,9 +17,13 @@ def executer(commande):
         subprocess.run(commande, shell=True, check=True, capture_output=True, text=True)
         print(f"✅ Réussi : {commande}")
     except subprocess.CalledProcessError as e:
-        print(f"❌ Erreur sur : {commande}\n{e.stderr}")
+        # On ignore l'erreur si c'est juste parce qu'il n'y a rien à sauvegarder
+        if "nothing to commit" in e.stderr or "no changes added to commit" in e.stderr:
+             print(f"ℹ️ Info : Aucun nouveau fichier à sauvegarder sur GitHub.")
+        else:
+            print(f"❌ Erreur sur : {commande}\n{e.stderr}")
 
-print("--- ÉTAPE 1 : CRÉATION DU DÉPÔT SUR GITHUB ---")
+print("--- ÉTAPE 1 : CRÉATION DU DÉPÔT 'AURA' SUR GITHUB ---")
 
 headers = {
     "Authorization": f"token {token}",
@@ -35,7 +40,7 @@ reponse = requests.post("https://api.github.com/user/repos", headers=headers, js
 if reponse.status_code == 201:
     print(f"🎉 Super ! Le dépôt '{repo_name}' a été créé avec succès sur ton compte GitHub.")
 elif reponse.status_code == 422:
-    print(f"ℹ️ Le dépôt '{repo_name}' existe déjà sur ton compte GitHub (ou a déjà été créé).")
+    print(f"ℹ️ Le dépôt '{repo_name}' existe déjà sur ton compte GitHub.")
 else:
     print(f"❌ Échec de la création. Code erreur : {reponse.status_code}")
     print(reponse.text)
