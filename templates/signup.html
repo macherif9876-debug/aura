@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
   <style>
-    /* ===== VARIABLES & RESET ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -37,14 +36,11 @@
       overflow-x: hidden;
     }
 
-    /* ===== FOND DÉCORATIF ===== */
     body::before {
       content: '';
       position: fixed;
-      top: -30%;
-      right: -20%;
-      width: 700px;
-      height: 700px;
+      top: -30%; right: -20%;
+      width: 700px; height: 700px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%);
       pointer-events: none;
@@ -53,10 +49,8 @@
     body::after {
       content: '';
       position: fixed;
-      bottom: -20%;
-      left: -15%;
-      width: 500px;
-      height: 500px;
+      bottom: -20%; left: -15%;
+      width: 500px; height: 500px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(201,168,76,0.04) 0%, transparent 70%);
       pointer-events: none;
@@ -67,7 +61,6 @@
       50%       { transform: scale(1.08); opacity: 0.7; }
     }
 
-    /* ===== CARTE PRINCIPALE ===== */
     .card {
       width: 100%;
       max-width: 560px;
@@ -80,7 +73,6 @@
       animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    /* Ligne dorée en haut de la carte */
     .card::before {
       content: '';
       position: absolute;
@@ -94,10 +86,9 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ===== EN-TÊTE ===== */
     .header {
       text-align: center;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
     }
 
     .logo {
@@ -110,8 +101,8 @@
       line-height: 1;
       display: block;
       margin-bottom: 0.5rem;
+      text-decoration: none;
     }
-
     .logo span {
       display: block;
       font-size: 0.7rem;
@@ -138,9 +129,53 @@
       margin-top: 0.35rem;
     }
 
+    /* ===== BOUTON GOOGLE ===== */
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 0.85rem 1rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #1a1a1a;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      margin-bottom: 0.5rem;
+    }
+    .btn-google:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .btn-google:active { transform: scale(0.98); }
+
+    /* ===== SÉPARATEUR ===== */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gris);
+      margin: 1.2rem 0;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--bordure);
+    }
+
     /* ===== FLASH MESSAGES ===== */
     .flash-list { list-style: none; margin-bottom: 1.5rem; }
-
     .flash {
       padding: 0.75rem 1rem;
       border-radius: 3px;
@@ -158,7 +193,6 @@
     /* ===== FORMULAIRE ===== */
     .form { display: flex; flex-direction: column; gap: 1.2rem; }
 
-    /* Rangée de 2 colonnes */
     .row-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -174,7 +208,6 @@
       text-transform: uppercase;
       color: var(--gris);
     }
-
     label .requis { color: var(--or); margin-left: 2px; }
 
     input, select {
@@ -191,49 +224,37 @@
       appearance: none;
       -webkit-appearance: none;
     }
-
     input::placeholder { color: #444; }
-
     input:focus, select:focus {
       border-color: var(--or);
       box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
     }
 
-    /* Select personnalisé */
-    .select-wrapper {
-      position: relative;
-    }
+    .select-wrapper { position: relative; }
     .select-wrapper::after {
       content: '▾';
       position: absolute;
-      right: 1rem;
-      top: 50%;
+      right: 1rem; top: 50%;
       transform: translateY(-50%);
       color: var(--or);
       pointer-events: none;
       font-size: 0.9rem;
     }
     .select-wrapper select { padding-right: 2.5rem; }
-
     select option { background: #1a1a1a; }
     select:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    /* Champ téléphone avec indicatif */
     .tel-group {
       display: grid;
       grid-template-columns: 140px 1fr;
       gap: 0.6rem;
     }
 
-    /* Mot de passe avec œil */
-    .password-wrapper {
-      position: relative;
-    }
+    .password-wrapper { position: relative; }
     .password-wrapper input { padding-right: 3rem; }
     .eye-btn {
       position: absolute;
-      right: 0.9rem;
-      top: 50%;
+      right: 0.9rem; top: 50%;
       transform: translateY(-50%);
       background: none;
       border: none;
@@ -246,7 +267,6 @@
     }
     .eye-btn:hover { color: var(--or); }
 
-    /* Séparateur de section */
     .section-label {
       display: flex;
       align-items: center;
@@ -264,12 +284,7 @@
       background: var(--bordure);
     }
 
-    /* Indicateur de force du mot de passe */
-    .strength-bar {
-      display: flex;
-      gap: 4px;
-      margin-top: 5px;
-    }
+    .strength-bar { display: flex; gap: 4px; margin-top: 5px; }
     .strength-bar span {
       flex: 1;
       height: 3px;
@@ -284,7 +299,7 @@
       min-height: 1rem;
     }
 
-    /* ===== BOUTON PRINCIPAL ===== */
+    /* ===== BOUTON SUBMIT ===== */
     .btn-submit {
       background: linear-gradient(135deg, var(--or) 0%, var(--or-clair) 100%);
       color: var(--noir);
@@ -303,18 +318,9 @@
       position: relative;
       overflow: hidden;
     }
-    .btn-submit::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0);
-      transition: background 0.2s;
-    }
     .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
     .btn-submit:active { transform: translateY(0); opacity: 1; }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-    /* Spinner dans le bouton */
     .btn-submit .spinner {
       display: none;
       width: 16px; height: 16px;
@@ -326,7 +332,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ===== LIEN CONNEXION ===== */
     .lien-connexion {
       text-align: center;
       font-size: 0.83rem;
@@ -341,7 +346,6 @@
     }
     .lien-connexion a:hover { color: var(--or-clair); text-decoration: underline; }
 
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 520px) {
       .card { padding: 2rem 1.4rem; }
       .row-2 { grid-template-columns: 1fr; }
@@ -354,7 +358,7 @@
 
 <div class="card">
 
-  <!-- ===== EN-TÊTE ===== -->
+  <!-- EN-TÊTE -->
   <div class="header">
     <a class="logo" href="/">
       AURA
@@ -364,7 +368,7 @@
     <p class="sous-titre">Rejoignez la plateforme et découvrez des milliers de produits</p>
   </div>
 
-  <!-- ===== FLASH MESSAGES (depuis Flask) ===== -->
+  <!-- FLASH MESSAGES -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <ul class="flash-list">
@@ -378,77 +382,62 @@
     {% endif %}
   {% endwith %}
 
-  <!-- ===== FORMULAIRE D'INSCRIPTION ===== -->
-  <!--
-    ACTION  → route 'inscription.signup' (Blueprint auth_inscription.py)
-    MÉTHODE → POST
-    Champs  → nom, prenom, email, password, confirm_password,
-               indicatif, telephone, id_pays, id_region
-  -->
+  <!-- ✅ BOUTON GOOGLE -->
+  <a href="/auth/google" class="btn-google">
+    <svg width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    S'inscrire avec Google
+  </a>
+
+  <!-- SÉPARATEUR -->
+  <div class="divider">ou remplir le formulaire</div>
+
+  <!-- FORMULAIRE D'INSCRIPTION -->
   <form class="form"
         method="POST"
         action="{{ url_for('inscription.signup') }}"
         id="formInscription"
         novalidate>
 
-    <!-- ── SECTION : IDENTITÉ ── -->
     <div class="section-label">Identité</div>
 
-    <!-- Nom & Prénom côte à côte -->
     <div class="row-2">
       <div class="field">
         <label for="nom">Nom <span class="requis">*</span></label>
-        <input type="text"
-               id="nom"
-               name="nom"
+        <input type="text" id="nom" name="nom"
                placeholder="Diallo"
                value="{{ form_data.get('nom', '') }}"
-               required
-               autocomplete="family-name"/>
+               required autocomplete="family-name"/>
       </div>
       <div class="field">
         <label for="prenom">Prénom <span class="requis">*</span></label>
-        <input type="text"
-               id="prenom"
-               name="prenom"
+        <input type="text" id="prenom" name="prenom"
                placeholder="Moussa"
                value="{{ form_data.get('prenom', '') }}"
-               required
-               autocomplete="given-name"/>
+               required autocomplete="given-name"/>
       </div>
     </div>
 
-    <!-- Email -->
     <div class="field">
       <label for="email">Adresse email <span class="requis">*</span></label>
-      <input type="email"
-             id="email"
-             name="email"
+      <input type="email" id="email" name="email"
              placeholder="moussa@exemple.com"
              value="{{ form_data.get('email', '') }}"
-             required
-             autocomplete="email"/>
+             required autocomplete="email"/>
     </div>
 
-    <!-- ── SECTION : TÉLÉPHONE ── -->
     <div class="section-label">Téléphone</div>
 
     <div class="field">
       <label for="telephone">Numéro de téléphone <span class="requis">*</span></label>
-      <!--
-        Le groupe contient :
-        - #indicatif  → envoyé comme "indicatif" (ex: +221) — correspond à profile_data["telephone"]
-        - #telephone  → le numéro sans indicatif (ex: 771234567)
-        Le backend concatène : telephone_complet = indicatif + telephone
-      -->
       <div class="tel-group">
-        <!-- Indicatif pays : name="indicatif" attendu par le backend -->
         <div class="select-wrapper">
-          <select id="indicatif"
-                  name="indicatif"
-                  required>
+          <select id="indicatif" name="indicatif" required>
             <option value="">Indicatif</option>
-            <!-- On génère les indicatifs depuis la liste des pays Supabase -->
             {% for p in pays %}
               <option value="{{ p.indicatif }}"
                 {% if form_data.get('indicatif') == p.indicatif|string %}selected{% endif %}>
@@ -457,27 +446,19 @@
             {% endfor %}
           </select>
         </div>
-
-        <!-- Numéro : name="telephone" attendu par le backend -->
-        <input type="tel"
-               id="telephone"
-               name="telephone"
+        <input type="tel" id="telephone" name="telephone"
                placeholder="77 123 45 67"
                value="{{ form_data.get('telephone', '') }}"
-               required
-               inputmode="numeric"/>
+               required inputmode="numeric"/>
       </div>
     </div>
 
-    <!-- ── SECTION : LOCALISATION ── -->
     <div class="section-label">Localisation</div>
 
-    <!-- Pays -->
     <div class="field">
       <label for="id_pays">Pays</label>
       <div class="select-wrapper">
-        <select id="id_pays"
-                name="id_pays">
+        <select id="id_pays" name="id_pays">
           <option value="">— Choisir un pays —</option>
           {% for p in pays %}
             <option value="{{ p.id }}"
@@ -489,18 +470,11 @@
       </div>
     </div>
 
-    <!-- Région (chargée dynamiquement via JS selon le pays) -->
     <div class="field">
       <label for="id_region">Région / Ville</label>
       <div class="select-wrapper">
-        <select id="id_region"
-                name="id_region"
-                disabled>
+        <select id="id_region" name="id_region" disabled>
           <option value="">— Sélectionnez d'abord un pays —</option>
-          <!--
-            Pré-remplissage en cas d'erreur de formulaire :
-            si form_data contient déjà id_pays, on recharge les régions via JS au chargement
-          -->
           {% if form_data.get('id_region') %}
             {% for r in regions %}
               {% if r.id|string == form_data.get('id_region') %}
@@ -512,48 +486,34 @@
       </div>
     </div>
 
-    <!-- ── SECTION : SÉCURITÉ ── -->
     <div class="section-label">Sécurité</div>
 
-    <!-- Mot de passe -->
     <div class="field">
       <label for="password">Mot de passe <span class="requis">*</span></label>
       <div class="password-wrapper">
-        <input type="password"
-               id="password"
-               name="password"
+        <input type="password" id="password" name="password"
                placeholder="Minimum 6 caractères"
-               required
-               autocomplete="new-password"
-               minlength="6"/>
-        <button type="button" class="eye-btn" aria-label="Afficher le mot de passe" data-target="password">👁</button>
+               required autocomplete="new-password" minlength="6"/>
+        <button type="button" class="eye-btn" data-target="password">👁</button>
       </div>
-      <!-- Barre de force du mot de passe -->
       <div class="strength-bar">
-        <span id="sb1"></span>
-        <span id="sb2"></span>
-        <span id="sb3"></span>
-        <span id="sb4"></span>
+        <span id="sb1"></span><span id="sb2"></span>
+        <span id="sb3"></span><span id="sb4"></span>
       </div>
       <div class="strength-text" id="strengthText"></div>
     </div>
 
-    <!-- Confirmation mot de passe -->
     <div class="field">
       <label for="confirm_password">Confirmer le mot de passe <span class="requis">*</span></label>
       <div class="password-wrapper">
-        <input type="password"
-               id="confirm_password"
-               name="confirm_password"
+        <input type="password" id="confirm_password" name="confirm_password"
                placeholder="Répétez votre mot de passe"
-               required
-               autocomplete="new-password"/>
-        <button type="button" class="eye-btn" aria-label="Afficher" data-target="confirm_password">👁</button>
+               required autocomplete="new-password"/>
+        <button type="button" class="eye-btn" data-target="confirm_password">👁</button>
       </div>
       <div class="strength-text" id="matchText"></div>
     </div>
 
-    <!-- ===== BOUTON SOUMETTRE ===== -->
     <button type="submit" class="btn-submit" id="btnSubmit">
       <span id="btnLabel">Créer mon compte</span>
       <div class="spinner" id="btnSpinner"></div>
@@ -561,29 +521,17 @@
 
   </form>
 
-  <!-- ===== LIEN VERS CONNEXION ===== -->
   <p class="lien-connexion">
     Déjà un compte ?
     <a href="{{ url_for('login_page') }}">Se connecter</a>
   </p>
 
-</div><!-- /.card -->
+</div>
 
-
-<!-- ===================================================================
-     JAVASCRIPT
-     1. Chargement dynamique des régions quand le pays change
-     2. Toggle visibilité mot de passe
-     3. Indicateur de force du mot de passe
-     4. Validation confirmation mot de passe
-     5. Spinner au submit
-     =================================================================== -->
 <script>
-  /* ── 1. CHARGEMENT DYNAMIQUE DES RÉGIONS ── */
+  /* ── CHARGEMENT DYNAMIQUE DES RÉGIONS ── */
   const selectPays   = document.getElementById('id_pays');
   const selectRegion = document.getElementById('id_region');
-
-  // Valeur pré-sélectionnée en cas de reprise après erreur
   const paysPreselect   = "{{ form_data.get('id_pays', '') }}";
   const regionPreselect = "{{ form_data.get('id_region', '') }}";
 
@@ -601,15 +549,12 @@
     selectRegion.disabled = true;
     selectRegion.innerHTML = '<option value="">Chargement…</option>';
     try {
-      // ✅ Route API : /api/regions/<id_pays> (Blueprint inscription_bp dans auth_inscription.py)
       const resp = await fetch(`/api/regions/${idPays}`);
       const regions = await resp.json();
-
       if (regions.length === 0) {
         selectRegion.innerHTML = '<option value="">Aucune région disponible</option>';
         return;
       }
-
       selectRegion.innerHTML = '<option value="">— Choisir une région —</option>';
       regions.forEach(r => {
         const opt = document.createElement('option');
@@ -624,43 +569,25 @@
     }
   }
 
-  // Si formulaire renvoyé après erreur : recharger les régions du pays déjà choisi
-  if (paysPreselect) {
-    chargerRegions(paysPreselect, regionPreselect);
-  }
+  if (paysPreselect) chargerRegions(paysPreselect, regionPreselect);
 
-
-  /* ── 2. TOGGLE VISIBILITÉ MOT DE PASSE ── */
+  /* ── TOGGLE MOT DE PASSE ── */
   document.querySelectorAll('.eye-btn').forEach(btn => {
     btn.addEventListener('click', function () {
       const input = document.getElementById(this.dataset.target);
       if (input.type === 'password') {
-        input.type = 'text';
-        this.textContent = '🙈';
+        input.type = 'text'; this.textContent = '🙈';
       } else {
-        input.type = 'password';
-        this.textContent = '👁';
+        input.type = 'password'; this.textContent = '👁';
       }
     });
   });
 
-
-  /* ── 3. FORCE DU MOT DE PASSE ── */
+  /* ── FORCE DU MOT DE PASSE ── */
   const pwInput     = document.getElementById('password');
-  const strengthBar = [
-    document.getElementById('sb1'),
-    document.getElementById('sb2'),
-    document.getElementById('sb3'),
-    document.getElementById('sb4'),
-  ];
+  const strengthBar = ['sb1','sb2','sb3','sb4'].map(id => document.getElementById(id));
   const strengthText = document.getElementById('strengthText');
-
-  const COLORS = {
-    weak:   '#E05C5C',
-    medium: '#E0A03C',
-    good:   '#7BC87A',
-    strong: '#4CAF72',
-  };
+  const COLORS = { weak:'#E05C5C', medium:'#E0A03C', good:'#7BC87A', strong:'#4CAF72' };
 
   function evaluerForce(pw) {
     let score = 0;
@@ -668,7 +595,7 @@
     if (pw.length >= 10) score++;
     if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
     if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
-    return score; // 0-4
+    return score;
   }
 
   pwInput.addEventListener('input', function () {
@@ -679,26 +606,22 @@
       return;
     }
     const score = evaluerForce(pw);
-    const labels = ['Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort'];
+    const labels  = ['Très faible','Faible','Moyen','Fort','Très fort'];
     const couleurs = [COLORS.weak, COLORS.weak, COLORS.medium, COLORS.good, COLORS.strong];
-
     strengthBar.forEach((b, i) => {
       b.style.background = i < score ? couleurs[score] : 'var(--bordure)';
     });
     strengthText.textContent = labels[score];
     strengthText.style.color = couleurs[score];
-
-    validerConfirmation(); // mise à jour simultanée
+    validerConfirmation();
   });
 
-
-  /* ── 4. VALIDATION CONFIRMATION MOT DE PASSE ── */
+  /* ── VALIDATION CONFIRMATION ── */
   const confirmInput = document.getElementById('confirm_password');
   const matchText    = document.getElementById('matchText');
 
   function validerConfirmation() {
-    const pw  = pwInput.value;
-    const cpw = confirmInput.value;
+    const pw = pwInput.value, cpw = confirmInput.value;
     if (!cpw) { matchText.textContent = ''; return; }
     if (pw === cpw) {
       matchText.textContent = '✓ Les mots de passe correspondent';
@@ -708,16 +631,11 @@
       matchText.style.color = COLORS.weak;
     }
   }
-
   confirmInput.addEventListener('input', validerConfirmation);
 
-
-  /* ── 5. SPINNER AU SUBMIT ── */
+  /* ── SPINNER AU SUBMIT ── */
   document.getElementById('formInscription').addEventListener('submit', function (e) {
-    // Vérification rapide côté client avant d'envoyer
-    const pw  = pwInput.value;
-    const cpw = confirmInput.value;
-
+    const pw = pwInput.value, cpw = confirmInput.value;
     if (pw !== cpw) {
       e.preventDefault();
       matchText.textContent = '✗ Les mots de passe ne correspondent pas';
@@ -725,14 +643,10 @@
       confirmInput.focus();
       return;
     }
-
-    const btn     = document.getElementById('btnSubmit');
-    const label   = document.getElementById('btnLabel');
-    const spinner = document.getElementById('btnSpinner');
-
+    const btn = document.getElementById('btnSubmit');
+    document.getElementById('btnLabel').style.display   = 'none';
+    document.getElementById('btnSpinner').style.display = 'block';
     btn.disabled = true;
-    label.style.display   = 'none';
-    spinner.style.display = 'block';
   });
 </script>
 
