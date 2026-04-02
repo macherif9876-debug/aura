@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>AURA — Connexion en cours...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <div class="text-4xl font-black italic text-black mb-4">AURA</div>
+        <p class="text-slate-500 font-medium text-sm" id="msg">Connexion en cours...</p>
+        <!-- Spinner -->
+        <div class="mt-6 mx-auto w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <script>
+    // Supabase retourne les tokens dans le fragment (#) de l'URL après OAuth Google.
+    // Le fragment n'est pas envoyé au serveur → on le lit en JS et on POST vers Flask.
+    (function() {
+        const hash = window.location.hash.substring(1); // supprime le #
+        if (!hash) {
+            // Pas de token → vérifier query params (certaines versions de Supabase)
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            if (code) {
+                // Exchange code flow
+                window.location.href = '/auth/callback/code?code=' + encodeURIComponent(code);
+                return;
+            }
+            document.getElementById('msg').textContent = "Erreur : aucun token reçu.";
+            setTimeout(() => { window.location.href = '/login'; }, 2000);
+            return;
+        }
+
+        const params = new URLSearchParams(hash);
+        const access_token  = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+
+        if (!access_token) {
+            document.getElementById('msg').textContent = "Erreur d'authentification. Redirection...";
+            setTimeout(() => { window.location.href = '/login'; }, 2000);
+            return;
+        }
+
+        // Envoyer les tokens à Flask via un POST
+        fetch('/auth/callback/process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                access_token:  access_token,
+                refresh_token: refresh_token || ''
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                window.location.href = '/';
+            } else {
+                document.getElementById('msg').textContent = "Erreur : " + (data.error || 'inconnue');
+                setTimeout(() => { window.location.href = '/login'; }, 2000);
+            }
+        })
+        .catch(() => {
+            document.getElementById('msg').textContent = "Erreur réseau. Redirection...";
+            setTimeout(() => { window.location.href = '/login'; }, 2000);
+        });
+    })();
+    </script>
+</body>
+</html>
