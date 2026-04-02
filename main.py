@@ -35,8 +35,6 @@ from auth_inscription import inscription_bp, init_supabase
 
 import cloudinary
 import cloudinary.uploader
-from PIL import Image
-from rembg import remove
 
 # --- IA LOURDE SUPPRIMÉE AU DÉMARRAGE ---
 MODE_IA_ACTIF = False
@@ -168,7 +166,7 @@ def upload_to_github(file_storage):
         logging.error(f"Erreur GitHub Intelligent: {e}")
         return None
 
-# --- UPLOAD DIRECT (sans suppression arrière-plan) ---
+# --- UPLOAD DIRECT (rembg supprimé — upload sans suppression arrière-plan) ---
 def designer_automatique_ia(file_storage):
     """Retourne le fichier directement — rembg supprimé pour alléger le déploiement"""
     try:
@@ -178,7 +176,7 @@ def designer_automatique_ia(file_storage):
         logging.error(f"Erreur upload image: {e}")
         file_storage.seek(0)
         return file_storage
-        
+
 CATEGORIES_LIST = [
     "ÉLECTRONIQUE (TÉLÉPHONES, PC)", "HABITS POUR FEMMES", "HABITS POUR HOMMES",
     "CHAUSSURES HOMMES & FEMMES", "AFFAIRES POUR BÉBÉS ET ENFANTS",
@@ -1777,6 +1775,5 @@ async function envoyer() {
 # ==============================================================================
 
 if __name__ == '__main__':
-    # Lancement normal du serveur Flask de Replit
     PORT = int(os.getenv("PORT", 3000))
     app.run(host='0.0.0.0', port=PORT, debug=True)
