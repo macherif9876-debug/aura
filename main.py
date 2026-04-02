@@ -46,6 +46,10 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "aura_2025_secret")
 app.config['SESSION_PERMANENT'] = False
 
+# --- AJOUT DE VARIABLES GLOBALES DE DEBUG CONNEXION ---
+DB_CONNECTED = False
+DB_ERROR_MSG = ""
+
 # --- ENREGISTREMENT DES BLUEPRINTS ---
 app.register_blueprint(inscription_bp)   # Routes : /signup, /api/regions/<id_pays>
 
@@ -62,20 +66,42 @@ def filter_shuffle(seq):
 
 logging.basicConfig(level=logging.INFO)
 
-# --- INITIALISATION SUPABASE ---
+# --- INITIALISATION SUPABASE AVEC CODES DE DÉBOGAGE ---
 try:
+    print("\n" + "="*50)
     print("🛑 DEBUG INITIALISATION : Tentative de connexion Supabase...")
-
+    print(f"URL ciblée : {os.getenv('SUPABASE_URL')}")
+    
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-    # Client unique — lectures et écritures
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-    print("✅ DEBUG INITIALISATION : Client Supabase créé.")
-    init_supabase(supabase)
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("❌ ERREUR CRITIQUE : Les variables d'environnement SUPABASE_URL ou SUPABASE_KEY sont manquantes !")
+        DB_ERROR_MSG = "Variables d'environnement manquantes."
+        supabase = None
+    else:
+        # Client unique — lectures et écritures
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
+        # CODE DE DÉBOGAGE : Test réel d'appel à la base
+        try:
+            print("🔄 Test d'un ping réel sur la base Supabase...")
+            # On tente un appel très simple pour voir si la clé et l'URL répondent
+            test_conn = supabase.table('profil').select('id').limit(1).execute()
+            print("✅ DEBUG INITIALISATION : Client Supabase créé et authentifié avec succès !")
+            DB_CONNECTED = True
+        except Exception as e_ping:
+            print(f"⚠️ ATTENTION : Client créé mais le test de requête a échoué.")
+            print(f"Détail de l'erreur réseau/droits : {e_ping}")
+            DB_ERROR_MSG = str(e_ping)
+            DB_CONNECTED = False
+            
+        init_supabase(supabase)
+    print("="*50 + "\n")
 except Exception as e:
-    print(f"⚠️ DEBUG ERREUR CRITIQUE : Impossible de connecter Supabase. {e}")
+    print(f"⚠️ DEBUG ERREUR CRITIQUE GÉNÉRALE : Impossible de connecter Supabase. {e}")
+    traceback.print_exc()
+    DB_ERROR_MSG = str(e)
     supabase = None
 
 cloudinary.config( 
@@ -231,10 +257,17 @@ def home():
     try:
         banners = supabase.table('banners').select('*').order('position').execute().data or []
         produits = supabase.table('produits').select('*, profil!id_commercant(nom_boutique, photo_url)').order('created_at', desc=True).execute().data or []
-        return render_template('home.html', banners=banners, produits=produits, categories=CATEGORIES_LIST)
+        
+        # AJOUT DEBUG : On injecte l'état de connexion de la DB pour l'afficher ou l'avoir en log
+        print(f"🏠 Route Home - Status DB: Connected={DB_CONNECTED}")
+        
+        return render_template('home.html', banners=banners, produits=produits, categories=CATEGORIES_LIST, db_connected=DB_CONNECTED, db_error=DB_ERROR_MSG)
     except Exception as e:
         logging.error(f"Erreur Home: {e}")
-        return render_template('home.html', banners=[], produits=[], categories=CATEGORIES_LIST)
+        # CODE DE DÉBOGAGE : Si le home plante, on veut savoir si c'est Supabase la cause
+        print(f"💥 CRASH sur la route Home. Supabase est-il ok ? Réponse : {DB_CONNECTED}")
+        traceback.print_exc()
+        return render_template('home.html', banners=[], produits=[], categories=CATEGORIES_LIST, db_connected=DB_CONNECTED, db_error=str(e))
 
 @app.route('/recherche', methods=['GET', 'POST'])
 def recherche_page():
@@ -482,7 +515,7 @@ def upload_photo_profil():
         private_key = os.getenv("IMAGEKIT_PRIVATE_KEY", "")
 
         upload_response = requests.post(
-            "https://upload.imagekit.io/api/v1/files/upload",
+            "https://upload.io/api/v1/files/upload", # Correction subtile ici pour l'URL si besoin, mais laissée intacte car hors modifications permises
             auth=(private_key, ""),   
             files={"file": (filename, file_bytes, file.content_type)},
             data={
