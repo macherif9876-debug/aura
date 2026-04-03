@@ -434,6 +434,9 @@ def compte():
         flash("Erreur lors du chargement de votre profil.", "error")
         return render_template('compte.html', user={})
 
+# ==============================================================================
+# PHOTO DE PROFIL → TOUJOURS STOCKÉE SUR IMAGEKIT (corrigé et renforcé)
+# ==============================================================================
 @app.route('/api/upload_photo_profil', methods=['POST'])
 @login_required
 def upload_photo_profil():
@@ -449,24 +452,38 @@ def upload_photo_profil():
         file_bytes = file.read()
         extension = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
         filename  = f"avatar_{user_id}.{extension}"
-        private_key = os.getenv("IMAGEKIT_PRIVATE_KEY", "")
-        # ✅ URL ImageKit corrigée
+
+        private_key = os.getenv("IMAGEKIT_PRIVATE_KEY", "").strip()
+        if not private_key:
+            return jsonify({"error": "IMAGEKIT_PRIVATE_KEY non configurée"}), 500
+
+        # Upload direct sur ImageKit (méthode officielle et fiable)
         upload_response = requests.post(
             "https://upload.imagekit.io/api/v1/files/upload",
             auth=(private_key, ""),   
             files={"file": (filename, file_bytes, file.content_type)},
-            data={"fileName": filename, "folder": "/avatars/", "useUniqueFileName": "false", "isPrivateFile": "false"},
+            data={
+                "fileName": filename,
+                "folder": "/avatars/",
+                "useUniqueFileName": "false",
+                "isPrivateFile": "false",
+                "overwrite": "true"
+            },
             timeout=30
         )
+
         if upload_response.status_code not in [200, 201]:
             logging.error(f"[PHOTO PROFIL] ImageKit erreur : {upload_response.text}")
             return jsonify({"error": f"ImageKit refus : {upload_response.text}"}), 500
+
         result    = upload_response.json()
         photo_url = result.get("url")
         if not photo_url:
             return jsonify({"error": "URL non retournée par ImageKit"}), 500
+
+        # Mise à jour dans la table profil
         supabase.table('profil').update({"photo_url": photo_url}).eq('id', user_id).execute()
-        logging.info(f"[PHOTO PROFIL] ✅ Photo uploadée : {photo_url}")
+        logging.info(f"[PHOTO PROFIL] ✅ Photo stockée sur ImageKit : {photo_url}")
         return jsonify({"status": "success", "photo_url": photo_url})
     except Exception as e:
         logging.error(f"[PHOTO PROFIL] ❌ Erreur : {e}")
@@ -639,7 +656,7 @@ def delete_user(user_id):
     except Exception as e: flash(f"Erreur : {e}", "error")
     return redirect(url_for('admin_dashboard'))
 
-# ✅ FIX 2 : upload_banners — Cloudinary au lieu de Supabase Storage (bucket introuvable)
+# ✅ FIX 2 : upload_banners — Cloudinary au lieu de Supabase Storage
 @app.route('/admin/upload_banners', methods=['POST'])
 @admin_access_required
 def upload_banners():
@@ -649,7 +666,6 @@ def upload_banners():
         try:
             position = index + 1
             file.seek(0)
-            # ✅ Upload vers Cloudinary (pas Supabase Storage)
             result = cloudinary.uploader.upload(
                 file,
                 folder="aura_banners",
@@ -719,12 +735,11 @@ def inscription_commercant():
     except Exception as e:
         return f"Erreur : {e}"
 
-# ✅ FIX 3 : merchant_dashboard — stats corrigées avec gestion d'erreur détaillée
+# ✅ FIX 3 : merchant_dashboard — stats corrigées
 @app.route('/merchant/dashboard')
 @merchant_required
 def merchant_dashboard():
     user_id = session.get('user_id')
-    # Statuts considérés comme "livrés"
     STATUTS_LIVRES = ['livré', 'livree', 'livre', 'livré(e)', 'delivered']
     try:
         produits   = supabase.table('produits').select('*').eq('id_commercant', user_id).order('created_at', desc=True).execute().data or []
@@ -744,7 +759,6 @@ def merchant_dashboard():
                 "statut":           o.get('statut', 'en_attente')
             })
 
-        # ✅ Stats corrigées
         total_ca           = sum(float(o.get('prix_total', 0) or 0) for o in res_orders if o.get('statut') in STATUTS_LIVRES)
         non_livres_count   = len([o for o in res_orders if o.get('statut') not in STATUTS_LIVRES])
         stock_restant      = sum(int(p.get('stock', 0) or 0) for p in produits)
@@ -784,7 +798,6 @@ def add_product():
 
         file = request.files.get('image_produit')
         if file and file.filename != '':
-            # ✅ designer_automatique_ia retourne directement une URL Cloudinary
             image_url = designer_automatique_ia(file) or ""
 
         v_file = request.files.get('video_produit')
@@ -819,7 +832,6 @@ def add_product():
 
             for d_file in request.files.getlist('images_details'):
                 if d_file and d_file.filename != '':
-                    # ✅ Même fix ici
                     detail_url = designer_automatique_ia(d_file)
                     if detail_url:
                         supabase.table('images_details').insert({"id_produit": new_id, "image_url": detail_url}).execute()
