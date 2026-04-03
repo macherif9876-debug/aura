@@ -219,6 +219,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# ✅ MODIFICATION : Ajout du rôle 'admin' pour l'accès aux routes d'administration
 def admin_access_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -226,12 +227,13 @@ def admin_access_required(f):
         if not user_id: return redirect(url_for('login_page'))
         try:
             user = supabase.table('profil').select('role').eq('id', user_id).single().execute()
-            if not user.data or user.data.get('role') not in ['super_admin', 'assistant']:
+            if not user.data or user.data.get('role') not in ['super_admin', 'assistant', 'admin']:
                 return "Accès interdit", 403
         except Exception as e: return "Erreur de vérification des droits.", 403
         return f(*args, **kwargs)
     return decorated_function
 
+# ✅ MODIFICATION : Ajout des rôles 'admin' et 'assistant' aux fonctionnalités commerçantes si besoin
 def merchant_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -239,7 +241,7 @@ def merchant_required(f):
         if not user_id: return redirect(url_for('login_page'))
         try:
             user = supabase.table('profil').select('role').eq('id', user_id).single().execute()
-            if not user.data or user.data.get('role') not in ['commercant', 'super_admin']:
+            if not user.data or user.data.get('role') not in ['commercant', 'super_admin', 'admin']:
                 return redirect(url_for('compte'))
         except: return redirect(url_for('compte'))
         return f(*args, **kwargs)
@@ -1705,7 +1707,8 @@ def api_admin_notifier_tous():
     try:
         res = supabase.table('profil').select('role').eq('id', user_id).execute()
         role = (res.data or [{}])[0].get('role', '')
-        if role not in ('admin', 'commercant'):
+        # ✅ MODIFICATION : Autorise le rôle 'admin' à accéder à cette route
+        if role not in ('admin', 'commercant', 'super_admin'):
             return jsonify({"error": "Accès refusé"}), 403
     except:
         pass  
