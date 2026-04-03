@@ -191,7 +191,7 @@
     /* ── BONS ── */
     .bon-card {
         background: white; border-radius: 20px; padding: 1.2rem;
-        border: 1.5px dashed #e2e8f0; margin-bottom: 1rem;
+        border: 1.5 dashed #e2e8f0; margin-bottom: 1rem;
         display: flex; align-items: center; gap: 1rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
@@ -283,9 +283,6 @@
     .empty-state p { font-size: 0.85rem; font-weight: 600; }
 </style>
 
-<!-- ══════════════════════════════════════════════════
-     MODAL PHOTO (plein écran au clic sur l'avatar)
-═══════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modalPhoto">
     {% if user.photo_url %}
         <img src="{{ user.photo_url }}" class="modal-photo" id="modalImg" alt="Photo de profil"/>
@@ -312,13 +309,9 @@
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
-     PAGE PRINCIPALE
-═══════════════════════════════════════════════════ -->
 <div class="bg-[#F8FAFC] min-h-screen pb-32 pt-8 px-4">
 <div class="max-w-md mx-auto">
 
-    <!-- ── EN-TÊTE PROFIL ── -->
     <div class="user-header">
 
         <div class="avatar-wrapper" onclick="ouvrirModal()" title="Voir le profil">
@@ -349,7 +342,6 @@
         </div>
     </div>
 
-    <!-- ── ESPACE ADMIN / MARCHAND ── -->
     {% if user.role in ['super_admin', 'commercant', 'autorise_commercant'] %}
     <div class="admin-card text-white mb-4">
         <p style="font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:3px; opacity:0.5; margin-bottom:1rem;">Espace Privilégié</p>
@@ -376,9 +368,6 @@
     </div>
     {% endif %}
 
-    <!-- ══════════════════════════════════════════
-         MENU PRINCIPAL
-    ═══════════════════════════════════════════ -->
     <div id="main-menu">
         <p style="font-size:10px; font-weight:900; text-transform:uppercase; color:#94a3b8; letter-spacing:3px; margin-bottom:1rem; margin-left:4px;">Mon Espace Client</p>
 
@@ -417,12 +406,8 @@
         </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-         SECTIONS
-    ═══════════════════════════════════════════ -->
     <div id="sections-container">
 
-        <!-- ── COMMANDES ── -->
         <div id="section-commandes" class="content-section">
             <div class="section-header">
                 <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
@@ -436,7 +421,6 @@
             </div>
         </div>
 
-        <!-- ── MESSAGES ── -->
         <div id="section-messages" class="content-section">
             <div class="section-header">
                 <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
@@ -447,7 +431,6 @@
                     <i class="fa-solid fa-rotate-right"></i>
                 </button>
             </div>
-            <!-- ── BOUTON ACTIVER NOTIFICATIONS ── -->
             <div id="bloc-notif-btn" style="margin-bottom:16px;">
                 <button id="btn-notif" class="btn-notif-activer" onclick="activerNotifManuellement()">
                     <i class="fa-solid fa-bell"></i>
@@ -463,7 +446,6 @@
             </div>
         </div>
 
-        <!-- ── FAVORIS ── -->
         <div id="section-favoris" class="content-section">
             <div class="section-header">
                 <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
@@ -477,7 +459,6 @@
             </div>
         </div>
 
-        <!-- ── PARRAINAGE ── -->
         <div id="section-parrainage" class="content-section">
             <div class="section-header">
                 <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
@@ -516,7 +497,6 @@
             </div>
         </div>
 
-        <!-- ── MON PROFIL (lecture) ── -->
         <div id="section-profil" class="content-section">
             <div class="section-header">
                 <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
@@ -544,7 +524,6 @@
             </button>
         </div>
 
-        <!-- ── MODIFIER PROFIL ── -->
         <div id="section-edit-profil" class="content-section">
             <div class="section-header">
                 <button class="back-btn" onclick="showSection('profil')"><i class="fa-solid fa-arrow-left"></i></button>
@@ -570,7 +549,6 @@
             </div>
         </div>
 
-        <!-- ── BONS ── -->
         <div id="section-bons" class="content-section">
             <div class="section-header">
                 <button class="back-btn" onclick="hideSections()"><i class="fa-solid fa-arrow-left"></i></button>
@@ -584,9 +562,7 @@
             </div>
         </div>
 
-    </div><!-- /sections-container -->
-
-</div>
+    </div></div>
 </div>
 
 <div id="toast"></div>
