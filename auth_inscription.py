@@ -40,11 +40,18 @@ def signup():
     if _supabase is None:
         flash("Erreur serveur.", "error")
         return render_template('signup.html', pays=[], form_data={})
+    
+    # Récupération des pays (compatible avec la nouvelle politique RLS "Tout le monde peut voir les pays")
     pays_list = []
     try:
-        pays_list = _supabase.table('pays').select('id, nom_pays, code_pays, indicatif').order('nom_pays').execute().data or []
+        pays_list = _supabase.table('pays') \
+            .select('id, nom_pays, code_pays, indicatif') \
+            .order('nom_pays') \
+            .execute().data or []
+        logging.info(f"[INSCRIPTION] {len(pays_list)} pays chargés avec succès (RLS OK)")
     except Exception as e:
         logging.error(f"[INSCRIPTION] Erreur pays : {e}")
+    
     if request.method == 'POST':
         nom       = request.form.get('nom', '').strip()
         prenom    = request.form.get('prenom', '').strip()
@@ -55,25 +62,38 @@ def signup():
         pays_id   = request.form.get('id_pays', '').strip()
         region_id = request.form.get('id_region', '').strip()
         telephone_complet = f"{indicatif}{telephone}" if indicatif and telephone else None
+
         valide, erreur = valider_donnees_inscription(request.form)
         if not valide:
             flash(erreur, "error")
             return render_template('signup.html', pays=pays_list, form_data=request.form)
+
         try:
             auth_res = _supabase.auth.sign_up({"email": email, "password": password})
             if not auth_res.user:
                 flash("Impossible de créer le compte. Email déjà utilisé ?", "error")
                 return render_template('signup.html', pays=pays_list, form_data=request.form)
+
             user_id = auth_res.user.id
-            profile_data = {"id": user_id, "nom": nom, "prenom": prenom, "email": email, "telephone": telephone_complet, "role": "client"}
+            profile_data = {
+                "id": user_id,
+                "nom": nom,
+                "prenom": prenom,
+                "email": email,
+                "telephone": telephone_complet,
+                "role": "client"
+            }
             if pays_id:   profile_data["pays_id"]   = pays_id
             if region_id: profile_data["region_id"] = region_id
+
             _supabase.table('profil').insert(profile_data).execute()
+
             session.clear()
             session['user_id'] = user_id
             session.modified = True
             flash(f"Bienvenue {prenom} !", "success")
             return redirect(url_for('home'))
+
         except Exception as e:
             logging.error(f"[INSCRIPTION] Erreur : {e}")
             err_str = str(e).lower()
@@ -81,18 +101,31 @@ def signup():
                 flash("Cette adresse email est déjà utilisée.", "error")
             else:
                 flash(f"Erreur : {str(e)}", "error")
+
     return render_template('signup.html', pays=pays_list, form_data={})
 
+# ==============================================================================
+# ENDPOINT RÉGIONS (compatible avec la nouvelle politique RLS "Tout le monde peut voir les régions")
+# ==============================================================================
 @inscription_bp.route('/api/regions/<string:pays_id>')
 def api_get_regions_by_pays(pays_id):
     if _supabase is None:
         return jsonify({"error": "Serveur non initialisé"}), 500
     try:
-        res = _supabase.table('region').select('id, nom_region').eq('pays_id', pays_id).order('nom_region').execute()
+        res = _supabase.table('region') \
+            .select('id, nom_region') \
+            .eq('pays_id', pays_id) \
+            .order('nom_region') \
+            .execute()
+        logging.info(f"[INSCRIPTION] {len(res.data or [])} régions chargées pour pays_id={pays_id} (RLS OK)")
         return jsonify(res.data or [])
     except Exception as e:
+        logging.error(f"[INSCRIPTION] Erreur régions : {e}")
         return jsonify({"error": str(e)}), 500
 
+# ==============================================================================
+# TOUT LE RESTE (Google OAuth, callback, etc.) RESTE INCHANGÉ
+# ==============================================================================
 @inscription_bp.route('/auth/google')
 def auth_google():
     if _supabase is None:
