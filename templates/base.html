@@ -137,7 +137,6 @@
         </a>
     </nav>
 
-    <!-- ══ FICHE PRODUIT (base.html) ══ -->
     <div id="productSheet" class="no-scrollbar">
         <div class="sticky top-0 bg-white/95 backdrop-blur-md px-4 py-4 flex items-center justify-between border-b z-[2100]">
             <button onclick="closeProduct()" class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full"><i class="fas fa-arrow-left"></i></button>
@@ -164,7 +163,6 @@
                         <span class="bg-blue-600 text-white px-3 py-1 rounded-md text-[9px] font-black uppercase">AURA PRO</span>
                     </div>
 
-                    <!-- ── BLOC MARCHAND (grand, dans le détail) ── -->
                     <div class="merchant-detail-block" id="merchantBlock" style="display:none;">
                         <div class="merchant-avatar-detail" id="merchantAvatar">?</div>
                         <div class="merchant-detail-info">
@@ -272,20 +270,41 @@
             if (!input.files || !input.files[0]) return;
             const resultsContainer = document.getElementById('searchResults');
             resultsContainer.innerHTML = '<div class="col-span-2 text-center py-10"><div class="animate-spin inline-block w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full"></div><p class="text-xs mt-2">L\'IA analyse votre image...</p></div>';
+            
             const formData = new FormData();
             formData.append('image_search', input.files[0]);
+            
             fetch('/recherche', { method: 'POST', body: formData })
-            .then(res => res.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const products = doc.querySelectorAll('.product-item');
+            .then(res => res.json()) // On attend du JSON ici car l'IA renvoie les objets trouvés
+            .then(products => {
                 resultsContainer.innerHTML = "";
+                if (!products || products.length === 0) {
+                    resultsContainer.innerHTML = '<p class="col-span-2 text-center py-10">Aucun produit similaire trouvé par l\'IA.</p>';
+                    return;
+                }
+                
+                // Génération des cards basées sur le JSON retourné
                 products.forEach(p => {
                     const wrapper = document.createElement('div');
-                    wrapper.innerHTML = p.outerHTML;
+                    wrapper.className = "product-item bg-white rounded-2xl border p-3 cursor-pointer";
+                    wrapper.onclick = () => openProduct(p.id);
+                    
+                    wrapper.innerHTML = `
+                        <div class="relative h-40 mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
+                            <img src="${p.image_url}" class="object-contain h-full w-full" alt="${p.nom}">
+                        </div>
+                        <h3 class="font-black text-xs uppercase truncate">${p.nom}</h3>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-blue-600 font-black text-sm">${p.prix ? p.prix.toLocaleString() + ' F' : '—'}</span>
+                            <span class="text-[9px] bg-gray-100 px-2 py-0.5 rounded font-black text-gray-500">IA Match</span>
+                        </div>
+                    `;
                     resultsContainer.appendChild(wrapper);
                 });
+            })
+            .catch(err => {
+                console.error(err);
+                resultsContainer.innerHTML = '<p class="col-span-2 text-center py-10 text-red-500">Erreur lors de l\'analyse de l\'image.</p>';
             });
         }
 
