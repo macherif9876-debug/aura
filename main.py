@@ -33,7 +33,7 @@ from auth_inscription import inscription_bp, init_supabase
 import cloudinary
 import cloudinary.uploader
 
-# Vision par ordinateur : Cloudinary uniquement
+# Vision par ordinateur : Hugging Face principal, Cloudinary en secours
 MODE_IA_ACTIF = True
 
 load_dotenv()
@@ -98,10 +98,9 @@ cloudinary.config(
 
 class MoteurRechercheAura:
     """
-    Moteur de recherche par image — UNIQUEMENT via Cloudinary AI.
-    Étape 1 : Upload image → Cloudinary détecte les tags automatiquement.
-    Étape 2 : Recherche produits avec ces tags dans Supabase.
-    Étape 3 : Si aucun tag trouvé → fallback recherche par couleurs dominantes.
+    Moteur de recherche par image.
+    Priorité 1 : Hugging Face API (Modèle ViT)
+    Priorité 2 (Secours) : Cloudinary Auto-Tagging
     """
 
     # Correspondance couleurs HEX → noms français
@@ -123,11 +122,13 @@ class MoteurRechercheAura:
     }
 
     def __init__(self):
-        self.produits_map = []
+        self.hf_token = os.getenv("HUGGINGFACE_API_KEY")
+        # Modèle de classification d'images standard
+        self.hf_api_url = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
 
     def indexer_tout_le_catalogue(self):
-        cld_ok = "✅" if os.getenv("CLOUDINARY_API_KEY") else "❌ manquante"
-        print(f"🔍 [CLOUDINARY VISION] Clé Cloudinary : {cld_ok}")
+        hf_ok = "✅" if self.hf_token else "❌ manquant"
+        print(f"🔍 [IA VISION] Clé Hugging Face : {hf_ok}")
 
     def recherche_intelligente(self, query_text=None, query_image_file=None, top_k=20):
         if query_image_file:
@@ -137,72 +138,79 @@ class MoteurRechercheAura:
         return []
 
     # ------------------------------------------------------------------
-    # 🖼️ RECHERCHE PAR IMAGE — Cloudinary AI tagging
+    # 🖼️ RECHERCHE PAR IMAGE — Hugging Face (Principal) & Cloudinary (Secours)
     # ------------------------------------------------------------------
     def _recherche_par_image(self, image_file, top_k=20):
+        tous_mots = []
+        image_file.seek(0)
+        image_data = image_file.read()
+
+        # --- OPTION 1 : Hugging Face (Service Principal) ---
+        if self.hf_token:
+            try:
+                logging.info("[HUGGING FACE] 🧠 Envoi de l'image pour analyse...")
+                headers = {"Authorization": f"Bearer {self.hf_token}"}
+                response = requests.post(self.hf_api_url, headers=headers, data=image_data, timeout=15)
+                
+                if response.status_code == 200:
+                    results = response.json()
+                    # On extrait les labels détectés par l'IA avec une confiance suffisante
+                    tous_mots = [res['label'].lower() for res in results if res.get('score', 0) >= 0.15]
+                    logging.info(f"[HUGGING FACE] ✅ Mots-clés détectés : {tous_mots}")
+                else:
+                    logging.warning(f"[HUGGING FACE] Erreur API (Status {response.status_code}). Passage au secours.")
+            except Exception as e:
+                logging.error(f"[HUGGING FACE] ❌ Échec : {e}. Passage au secours.")
+
+        # --- OPTION 2 : Cloudinary Auto-Tagging (Secours si Hugging Face échoue ou n'est pas configuré) ---
+        if not tous_mots:
+            try:
+                logging.info("[CLOUDINARY SECOURS] 📤 Upload image pour analyse...")
+                image_file.seek(0)
+                result = cloudinary.uploader.upload(
+                    image_file,
+                    categorization  = "google_tagging",
+                    auto_tagging    = 0.5,
+                    colors          = True,
+                    resource_type   = "image",
+                    folder          = "aura_recherche_temp",
+                    overwrite       = True
+                )
+
+                tags_ia = result.get('tags', [])
+                info = result.get('info', {})
+                cat_data = (info.get('categorization', {})
+                                .get('google_tagging', {})
+                                .get('data', []))
+                tags_google = [c.get('tag', '') for c in cat_data if c.get('confidence', 0) >= 0.5]
+                
+                colors_raw = result.get('colors', [])
+                noms_couleurs = self._hex_vers_noms(colors_raw)
+
+                tous_mots = list(dict.fromkeys([t.lower() for t in tags_ia + tags_google] + noms_couleurs))
+                logging.info(f"[CLOUDINARY SECOURS] ✅ Mots-clés détectés : {tous_mots[:12]}")
+
+            except Exception as e:
+                logging.error(f"[CLOUDINARY SECOURS] ❌ Erreur : {e}")
+
+        # --- Recherche des produits dans Supabase ---
+        if tous_mots:
+            ids = self._chercher_par_mots_cles(tous_mots, top_k)
+            if ids:
+                return ids
+
+        # Fallback ultime : retourner les produits les plus récents
+        logging.warning("[VISION] Aucune correspondance → retour produits récents")
         try:
-            image_file.seek(0)
-            logging.info("[CLOUDINARY VISION] 📤 Upload image pour analyse...")
-
-            # ── Upload + analyse automatique via Cloudinary ─────────────
-            result = cloudinary.uploader.upload(
-                image_file,
-                categorization  = "google_tagging",  # IA Google Vision via Cloudinary
-                auto_tagging    = 0.5,               # seuil de confiance minimum
-                colors          = True,               # extraire les couleurs dominantes
-                resource_type   = "image",
-                folder          = "aura_recherche_temp",
-                overwrite       = True
-            )
-
-            # ── Extraire les tags IA ─────────────────────────────────────
-            tags_ia = result.get('tags', [])
-
-            # Tags depuis la catégorisation Google
-            info         = result.get('info', {})
-            cat_data     = (info.get('categorization', {})
-                               .get('google_tagging', {})
-                               .get('data', []))
-            tags_google  = [c.get('tag', '') for c in cat_data
-                            if c.get('confidence', 0) >= 0.5]
-
-            # ── Extraire les couleurs dominantes ─────────────────────────
-            colors_raw   = result.get('colors', [])
-            noms_couleurs = self._hex_vers_noms(colors_raw)
-
-            # ── Fusionner tous les mots-clés ─────────────────────────────
-            tous_mots = list(dict.fromkeys(
-                [t.lower() for t in tags_ia + tags_google] + noms_couleurs
-            ))
-
-            logging.info(f"[CLOUDINARY VISION] ✅ Mots-clés détectés : {tous_mots[:12]}")
-
-            # ── Chercher les produits correspondants ─────────────────────
-            if tous_mots:
-                ids = self._chercher_par_mots_cles(tous_mots, top_k)
-                if ids:
-                    return ids
-
-            # ── Fallback : retourner les produits les plus récents ────────
-            logging.warning("[CLOUDINARY VISION] Aucune correspondance → retour produits récents")
             res = supabase.table('produits').select('id').order('created_at', desc=True).limit(top_k).execute()
             return [p['id'] for p in (res.data or [])]
-
         except Exception as e:
-            logging.error(f"[CLOUDINARY VISION] ❌ Erreur : {e}")
-            # Fallback ultime : retourner les produits récents
-            try:
-                res = supabase.table('produits').select('id').order('created_at', desc=True).limit(top_k).execute()
-                return [p['id'] for p in (res.data or [])]
-            except:
-                return []
+            logging.error(f"[VISION] Erreur fallback final : {e}")
+            return []
 
-    # ------------------------------------------------------------------
-    # 🎨 Conversion HEX → noms de couleurs français
-    # ------------------------------------------------------------------
     def _hex_vers_noms(self, colors_raw):
         noms = []
-        for item in colors_raw[:4]:  # 4 couleurs dominantes max
+        for item in colors_raw[:4]:
             hex_color = (item[0] if isinstance(item, list) else str(item)).lower().strip()
             for nom, hexlist in self.COULEURS.items():
                 if hex_color in hexlist:
@@ -210,9 +218,6 @@ class MoteurRechercheAura:
                     break
         return noms
 
-    # ------------------------------------------------------------------
-    # 🔎 Recherche produits par mots-clés dans Supabase
-    # ------------------------------------------------------------------
     def _chercher_par_mots_cles(self, keywords, top_k=20):
         ids = set()
         for mot in keywords[:10]:
@@ -230,9 +235,6 @@ class MoteurRechercheAura:
                 logging.warning(f"[VISION] Erreur query '{mot}': {e}")
         return list(ids)[:top_k]
 
-    # ------------------------------------------------------------------
-    # 📝 Recherche par texte
-    # ------------------------------------------------------------------
     def _recherche_par_texte(self, query_text, top_k=20):
         try:
             res = supabase.table('produits').select('id').or_(
@@ -248,14 +250,6 @@ class MoteurRechercheAura:
 moteur_ia = MoteurRechercheAura()
 
 # --- GITHUB CDN ---
-def rendre_depot_public(user, token, repo_nom):
-    try:
-        url = f"https://api.github.com/repos/{user}/{repo_nom}"
-        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
-        requests.patch(url, json={"private": False}, headers=headers, timeout=10)
-    except:
-        pass
-
 def trouver_nimporte_quel_depot(user, token):
     try:
         headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
@@ -271,6 +265,14 @@ def trouver_nimporte_quel_depot(user, token):
     except Exception as e:
         print(f"❌ Erreur scan GitHub pour {user}: {e}")
     return None
+
+def rendre_depot_public(user, token, repo_nom):
+    try:
+        url = f"https://api.github.com/repos/{user}/{repo_nom}"
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+        requests.patch(url, json={"private": False}, headers=headers, timeout=10)
+    except:
+        pass
 
 def upload_to_github(file_storage):
     try:
@@ -301,8 +303,6 @@ def upload_to_github(file_storage):
         return None
 
 def designer_automatique_ia(file_storage):
-    """Upload image sur Cloudinary avec suppression arrière-plan AI.
-    Retourne l'URL Cloudinary (string), pas un fichier."""
     try:
         file_storage.seek(0)
         result = cloudinary.uploader.upload(
@@ -401,7 +401,6 @@ def recherche_page():
                 if ids_trouves:
                     res = supabase.table('produits').select('*').in_('id', ids_trouves).execute()
                     produits_trouves = res.data or []
-                # Pas de message d'erreur si aucun résultat — c'est normal
             except Exception as e:
                 logging.error(f"[RECHERCHE IMAGE] Erreur : {e}")
                 erreur_image = "Analyse impossible. Réessayez avec une autre photo."
