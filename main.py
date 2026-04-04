@@ -97,113 +97,204 @@ cloudinary.config(
 )
 
 class MoteurRechercheAura:
+    """
+    Moteur de recherche par image avec 2 niveaux :
+      1. Primaire  : HuggingFace CLIP (quand le modèle est réveillé)
+      2. Fallback  : Claude API (Anthropic) — prend le relais instantanément si HF dort (503)
+    """
     def __init__(self):
-        self.produits_map = []  
-        self.hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
-        # Utilisation de CLIP qui est bien plus adapté pour comparer images et textes
-        self.api_url = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
+        self.produits_map  = []
+        self.hf_api_key    = os.getenv("HUGGINGFACE_API_KEY", "")
+        self.claude_key    = os.getenv("ANTHROPIC_API_KEY", "")
+        self.hf_url        = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
 
     def indexer_tout_le_catalogue(self):
-        print("📊 [IA] Mode IA activé pour Hugging Face.")
-        return
+        hf_ok     = "✅" if self.hf_api_key    else "❌ manquante"
+        claude_ok = "✅" if self.claude_key     else "❌ manquante"
+        print(f"🔍 [VISION] HuggingFace API : {hf_ok} | Claude API : {claude_ok}")
 
+    # ------------------------------------------------------------------
+    # 🔵 MÉTHODE PRINCIPALE
+    # ------------------------------------------------------------------
     def recherche_intelligente(self, query_text=None, query_image_file=None, top_k=20):
-        """Recherche par texte ou par vision par ordinateur via Hugging Face CLIP."""
-        if not MODE_IA_ACTIF or not self.hf_api_key:
-            logging.warning("[IA] Recherche intelligente désactivée ou clé API manquante.")
+        if query_image_file:
+            return self._recherche_par_image(query_image_file, top_k)
+        elif query_text:
+            return self._recherche_par_texte(query_text, top_k)
+        return []
+
+    # ------------------------------------------------------------------
+    # 🖼️ RECHERCHE PAR IMAGE — HuggingFace CLIP puis Claude en fallback
+    # ------------------------------------------------------------------
+    def _recherche_par_image(self, image_file, top_k=20):
+        image_file.seek(0)
+        img_data   = image_file.read()
+        img_base64 = base64.b64encode(img_data).decode('utf-8')
+
+        # Charger les produits une seule fois
+        try:
+            res_db   = supabase.table('produits').select('id, nom, description').execute()
+            produits = res_db.data or []
+            if not produits:
+                logging.warning("[VISION] Aucun produit en base.")
+                return []
+        except Exception as e:
+            logging.error(f"[VISION] Erreur chargement produits : {e}")
             return []
 
-        headers = {"Authorization": f"Bearer {self.hf_api_key}"}
+        # ── ÉTAPE 1 : Essai HuggingFace CLIP ──────────────────────────
+        if self.hf_api_key:
+            ids = self._hf_clip(img_base64, img_data, produits, top_k)
+            if ids is not None:          # None = modèle endormi → passer au fallback
+                return ids
+            logging.info("[VISION] HuggingFace endormi → bascule sur Claude API")
+        else:
+            logging.info("[VISION] Pas de clé HuggingFace → utilisation directe de Claude API")
 
-        # Cas 1 : Recherche par Image (Vision par ordinateur)
-        if query_image_file:
-            try:
-                logging.info("[IA] Envoi de l'image à Hugging Face pour extraction de caractéristiques...")
-                query_image_file.seek(0)
-                img_data = query_image_file.read()
-                
-                # Étape 1 : Récupérer tous les produits avec leurs noms et descriptions
-                res_db = supabase.table('produits').select('id', 'nom', 'description').execute()
-                if not res_db.data:
-                    return []
-                
-                produits = res_db.data
-                # On crée des textes descriptifs pour chaque produit
-                textes_candidats = [f"{p['nom']} {p.get('description', '') or ''}".strip() for p in produits]
-                
-                # Étape 2 : Préparer la charge utile pour l'API CLIP (Image + Liste de textes)
-                img_base64 = base64.b64encode(img_data).decode('utf-8')
-                payload = {
-                    "inputs": {
-                        "image": img_base64,
-                        "candidate_labels": textes_candidats[:100] # Limité à 100 pour éviter de saturer l'API
-                    }
-                }
+        # ── ÉTAPE 2 : Fallback Claude API ─────────────────────────────
+        if self.claude_key:
+            return self._claude_vision(img_base64, produits, top_k)
 
-                max_retries = 3
-                response = None
-                
-                for attempt in range(max_retries):
-                    try:
-                        response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
-                        
-                        if response.status_code == 503:
-                            logging.info(f"[IA] Modèle en cours de chargement, attente... (Tentative {attempt + 1}/{max_retries})")
-                            time.sleep(10)
-                            continue
-                            
-                        if response.status_code == 200:
-                            break
-                            
-                    except (requests.exceptions.ChunkedEncodingError, requests.exceptions.ConnectionError) as ce:
-                        logging.warning(f"[IA] Problème réseau ({ce}). Nouvelle tentative dans 3s...")
-                        time.sleep(3)
-                        continue
-                
-                if not response or response.status_code != 200:
-                    logging.error(f"[IA] Échec Hugging Face. Status: {response.status_code if response else 'None'}")
-                    return []
-                
-                resultats_ia = response.json()
-                
-                # Étape 3 : Associer les scores d'IA aux identifiants de nos produits
-                labels_scores = {}
-                if isinstance(resultats_ia, list):
-                    for item in resultats_ia:
-                        labels_scores[item.get('label')] = item.get('score', 0)
-                
-                # Trier les produits selon le score obtenu
-                produits_scores = []
-                for i, p in enumerate(produits[:100]):
-                    texte = textes_candidats[i]
-                    score = labels_scores.get(texte, 0)
-                    if score > 0.1: # Seuil minimum de pertinence
-                        produits_scores.append((p['id'], score))
-                
-                # Trier par score décroissant
-                produits_scores.sort(key=lambda x: x[1], reverse=True)
-                
-                ids_ordonnes = [item[0] for item in produits_scores]
-                logging.info(f"[IA] {len(ids_ordonnes)} produits pertinents trouvés par image.")
-                
-                return ids_ordonnes[:top_k]
-                
-            except Exception as e:
-                logging.error(f"[IA] Erreur traitement vision : {e}")
-                traceback.print_exc()
-                return []
-
-        # Cas 2 : Recherche par Texte simple
-        elif query_text:
-            try:
-                res_db = supabase.table('produits').select('id').ilike('nom', f"%{query_text}%").execute()
-                if res_db.data:
-                    return [p['id'] for p in res_db.data][:top_k]
-            except Exception as e:
-                logging.error(f"[IA] Erreur recherche texte : {e}")
-                return []
-
+        logging.error("[VISION] ❌ Aucun moteur IA disponible (clés HUGGINGFACE_API_KEY et ANTHROPIC_API_KEY manquantes)")
         return []
+
+    # ------------------------------------------------------------------
+    # 🤗 HuggingFace CLIP
+    # Retourne : liste d'IDs si succès | None si modèle endormi (503)
+    # ------------------------------------------------------------------
+    def _hf_clip(self, img_base64, img_data, produits, top_k):
+        headers         = {"Authorization": f"Bearer {self.hf_api_key}"}
+        textes_candidats = [f"{p['nom']} {p.get('description','') or ''}".strip() for p in produits]
+        payload = {
+            "inputs": {
+                "image": img_base64,
+                "candidate_labels": textes_candidats[:100]
+            }
+        }
+        try:
+            resp = requests.post(self.hf_url, headers=headers, json=payload, timeout=25)
+        except requests.exceptions.RequestException as e:
+            logging.warning(f"[HF] Erreur réseau : {e}")
+            return None   # Pas de connexion → fallback
+
+        if resp.status_code == 503:
+            logging.info("[HF] Modèle en cours de chargement (503) → fallback Claude")
+            return None   # Modèle endormi → fallback
+
+        if resp.status_code != 200:
+            logging.error(f"[HF] Statut inattendu : {resp.status_code}")
+            return None   # Erreur → fallback
+
+        try:
+            resultats    = resp.json()
+            labels_scores = {item.get('label'): item.get('score', 0) for item in resultats} if isinstance(resultats, list) else {}
+            scored = [(p['id'], labels_scores.get(textes_candidats[i], 0)) for i, p in enumerate(produits[:100]) if labels_scores.get(textes_candidats[i], 0) > 0.08]
+            scored.sort(key=lambda x: x[1], reverse=True)
+            ids = [s[0] for s in scored[:top_k]]
+            logging.info(f"[HF CLIP] ✅ {len(ids)} résultats trouvés")
+            return ids
+        except Exception as e:
+            logging.error(f"[HF] Erreur parsing réponse : {e}")
+            return None
+
+    # ------------------------------------------------------------------
+    # 🤖 Claude API Vision (Anthropic) — fallback
+    # ------------------------------------------------------------------
+    def _claude_vision(self, img_base64, produits, top_k):
+        logging.info("[CLAUDE] 🔍 Analyse d'image via Claude API...")
+        try:
+            # Détecter le type MIME depuis le base64
+            media_type = "image/jpeg"  # par défaut
+
+            resp = requests.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key":         self.claude_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type":      "application/json"
+                },
+                json={
+                    "model":      "claude-haiku-4-5-20251001",   # modèle rapide et économique
+                    "max_tokens": 200,
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type":       "base64",
+                                    "media_type": media_type,
+                                    "data":       img_base64
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Décris ce produit en 5 à 10 mots-clés français séparés par des virgules. "
+                                    "Sois précis : couleur, matière, type de produit, usage. "
+                                    "Réponds UNIQUEMENT avec les mots-clés, sans phrase ni ponctuation finale."
+                                )
+                            }
+                        ]
+                    }]
+                },
+                timeout=20
+            )
+
+            if resp.status_code != 200:
+                logging.error(f"[CLAUDE] Erreur API : {resp.status_code} — {resp.text[:200]}")
+                return []
+
+            data = resp.json()
+            # Extraire le texte de la réponse
+            texte_brut = ""
+            for block in data.get("content", []):
+                if block.get("type") == "text":
+                    texte_brut = block.get("text", "")
+                    break
+
+            if not texte_brut:
+                logging.warning("[CLAUDE] Réponse vide")
+                return []
+
+            logging.info(f"[CLAUDE] ✅ Mots-clés extraits : {texte_brut[:100]}")
+
+            # Rechercher ces mots-clés dans la base de données
+            mots_cles = [m.strip().lower() for m in texte_brut.split(',') if m.strip()]
+            ids_trouves = set()
+
+            for mot in mots_cles[:6]:   # Max 6 mots-clés pour ne pas surcharger
+                try:
+                    res = supabase.table('produits').select('id').or_(
+                        f"nom.ilike.%{mot}%,description.ilike.%{mot}%,categorie.ilike.%{mot}%"
+                    ).execute()
+                    for p in (res.data or []):
+                        ids_trouves.add(p['id'])
+                except Exception as eq:
+                    logging.warning(f"[CLAUDE] Erreur query '{mot}': {eq}")
+                    continue
+
+            ids_liste = list(ids_trouves)[:top_k]
+            logging.info(f"[CLAUDE] {len(ids_liste)} produits trouvés via mots-clés")
+            return ids_liste
+
+        except Exception as e:
+            logging.error(f"[CLAUDE] ❌ Erreur : {e}")
+            traceback.print_exc()
+            return []
+
+    # ------------------------------------------------------------------
+    # 📝 RECHERCHE PAR TEXTE (inchangée, rapide)
+    # ------------------------------------------------------------------
+    def _recherche_par_texte(self, query_text, top_k=20):
+        try:
+            res = supabase.table('produits').select('id').or_(
+                f"nom.ilike.%{query_text}%,description.ilike.%{query_text}%,categorie.ilike.%{query_text}%"
+            ).execute()
+            return [p['id'] for p in (res.data or [])][:top_k]
+        except Exception as e:
+            logging.error(f"[TEXTE] Erreur recherche : {e}")
+            return []
 
 moteur_ia = MoteurRechercheAura()
 
@@ -349,15 +440,26 @@ def home():
 
 @app.route('/recherche', methods=['GET', 'POST'])
 def recherche_page():
-    query = request.args.get('q', '')
+    query            = request.args.get('q', '')
     produits_trouves = []
+    erreur_image     = None
+
     if request.method == 'POST':
         file = request.files.get('image_search')
         if file and file.filename != '':
-            ids_trouves = moteur_ia.recherche_intelligente(query_image_file=file)
-            if ids_trouves:
-                res = supabase.table('produits').select('*').in_('id', ids_trouves).execute()
-                produits_trouves = res.data or []
+            try:
+                ids_trouves = moteur_ia.recherche_intelligente(query_image_file=file)
+                if ids_trouves:
+                    res = supabase.table('produits').select('*').in_('id', ids_trouves).execute()
+                    produits_trouves = res.data or []
+                if not produits_trouves:
+                    erreur_image = "Aucun produit similaire trouvé. Essayez avec une autre photo ou une recherche par texte."
+            except Exception as e:
+                logging.error(f"[RECHERCHE IMAGE] Erreur : {e}")
+                erreur_image = "Erreur lors de l'analyse de l'image. Réessayez dans quelques secondes."
+        else:
+            erreur_image = "Aucune image reçue."
+
     elif query:
         ids_trouves = moteur_ia.recherche_intelligente(query_text=query)
         if ids_trouves:
@@ -366,7 +468,9 @@ def recherche_page():
         if not produits_trouves:
             res = supabase.table('produits').select('*').ilike('nom', f"%{query}%").execute()
             produits_trouves = res.data or []
-    return render_template('recherche.html', produits=produits_trouves, query=query, categories=CATEGORIES_LIST)
+
+    return render_template('recherche.html', produits=produits_trouves, query=query,
+                           categories=CATEGORIES_LIST, erreur_image=erreur_image)
 
 @app.route('/categories')
 def categories():
