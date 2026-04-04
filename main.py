@@ -99,87 +99,94 @@ cloudinary.config(
 class MoteurRechercheAura:
     def __init__(self):
         self.produits_map = []  
-        # Récupération de la clé API Hugging Face depuis les secrets Replit
         self.hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
-        # URL du modèle de détection d'objets
-        self.api_url = "https://api-inference.huggingface.co/models/facebook/detr-resnet-50"
+        # Utilisation de CLIP qui est bien plus adapté pour comparer images et textes
+        self.api_url = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
 
     def indexer_tout_le_catalogue(self):
         print("📊 [IA] Mode IA activé pour Hugging Face.")
         return
 
     def recherche_intelligente(self, query_text=None, query_image_file=None, top_k=20):
-        """Recherche par texte ou par vision par ordinateur via Hugging Face."""
+        """Recherche par texte ou par vision par ordinateur via Hugging Face CLIP."""
         if not MODE_IA_ACTIF or not self.hf_api_key:
             logging.warning("[IA] Recherche intelligente désactivée ou clé API manquante.")
             return []
 
+        headers = {"Authorization": f"Bearer {self.hf_api_key}"}
+
         # Cas 1 : Recherche par Image (Vision par ordinateur)
         if query_image_file:
             try:
-                logging.info("[IA] Envoi de l'image à Hugging Face...")
+                logging.info("[IA] Envoi de l'image à Hugging Face pour extraction de caractéristiques...")
                 query_image_file.seek(0)
                 img_data = query_image_file.read()
-
-                headers = {"Authorization": f"Bearer {self.hf_api_key}"}
                 
-                # --- CORRECTIF APPLIQUÉ ICI ---
-                # Ajout d'une boucle de tentatives pour éviter les lectures incomplètes (IncompleteRead)
+                # Étape 1 : Récupérer tous les produits avec leurs noms et descriptions
+                res_db = supabase.table('produits').select('id', 'nom', 'description').execute()
+                if not res_db.data:
+                    return []
+                
+                produits = res_db.data
+                # On crée des textes descriptifs pour chaque produit
+                textes_candidats = [f"{p['nom']} {p.get('description', '') or ''}".strip() for p in produits]
+                
+                # Étape 2 : Préparer la charge utile pour l'API CLIP (Image + Liste de textes)
+                img_base64 = base64.b64encode(img_data).decode('utf-8')
+                payload = {
+                    "inputs": {
+                        "image": img_base64,
+                        "candidate_labels": textes_candidats[:100] # Limité à 100 pour éviter de saturer l'API
+                    }
+                }
+
                 max_retries = 3
                 response = None
                 
                 for attempt in range(max_retries):
                     try:
-                        response = requests.post(self.api_url, headers=headers, data=img_data, timeout=30)
+                        response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
                         
-                        # Si l'API nous dit que le modèle est en train de charger
                         if response.status_code == 503:
-                            logging.info(f"[IA] Modèle en cours de chargement, attente de 5s... (Tentative {attempt + 1}/{max_retries})")
-                            time.sleep(5)
+                            logging.info(f"[IA] Modèle en cours de chargement, attente... (Tentative {attempt + 1}/{max_retries})")
+                            time.sleep(10)
                             continue
                             
-                        # Si tout est OK, on sort de la boucle
                         if response.status_code == 200:
                             break
                             
                     except (requests.exceptions.ChunkedEncodingError, requests.exceptions.ConnectionError) as ce:
-                        logging.warning(f"[IA] Problème de flux ou coupure réseau ({ce}). Nouvelle tentative dans 3s...")
+                        logging.warning(f"[IA] Problème réseau ({ce}). Nouvelle tentative dans 3s...")
                         time.sleep(3)
                         continue
                 
-                # Vérifications finales après les tentatives
-                if not response:
-                    logging.error("[IA] Échec total de la requête à Hugging Face.")
-                    return []
-                    
-                if response.status_code != 200:
-                    logging.error(f"[IA] Erreur Hugging Face ({response.status_code}) : {response.text}")
+                if not response or response.status_code != 200:
+                    logging.error(f"[IA] Échec Hugging Face. Status: {response.status_code if response else 'None'}")
                     return []
                 
                 resultats_ia = response.json()
-                mots_cles = []
                 
-                # On extrait les objets détectés par l'IA
+                # Étape 3 : Associer les scores d'IA aux identifiants de nos produits
+                labels_scores = {}
                 if isinstance(resultats_ia, list):
                     for item in resultats_ia:
-                        label = item.get('label')
-                        score = item.get('score', 0)
-                        if label and score > 0.5: # On ne garde que ce dont l'IA est sûre à plus de 50%
-                            mots_cles.append(label)
+                        labels_scores[item.get('label')] = item.get('score', 0)
                 
-                logging.info(f"[IA] Objets détectés : {mots_cles}")
+                # Trier les produits selon le score obtenu
+                produits_scores = []
+                for i, p in enumerate(produits[:100]):
+                    texte = textes_candidats[i]
+                    score = labels_scores.get(texte, 0)
+                    if score > 0.1: # Seuil minimum de pertinence
+                        produits_scores.append((p['id'], score))
                 
-                if not mots_cles:
-                    return []
+                # Trier par score décroissant
+                produits_scores.sort(key=lambda x: x[1], reverse=True)
                 
-                # On cherche en BDD les produits qui contiennent ces mots-clés dans leur nom ou description
-                ids_trouves = []
-                for mot in mots_cles:
-                    res_db = supabase.table('produits').select('id').or_(f"nom.ilike.%{mot}%,description.ilike.%{mot}%").execute()
-                    if res_db.data:
-                        ids_trouves.extend([p['id'] for p in res_db.data])
+                ids_ordonnes = [item[0] for item in produits_scores]
+                logging.info(f"[IA] {len(ids_ordonnes)} produits pertinents trouvés par image.")
                 
-                return list(set(ids_trouves))[:top_k]
+                return ids_ordonnes[:top_k]
                 
             except Exception as e:
                 logging.error(f"[IA] Erreur traitement vision : {e}")
