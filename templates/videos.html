@@ -7,8 +7,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* 
-         * FIX 2 & 3 : Utilisation de 100dvh (dynamic viewport height).
+        /* * FIX 2 & 3 : Utilisation de 100dvh (dynamic viewport height).
          * Contrairement à 100vh, 100dvh se réduit automatiquement quand
          * le clavier virtuel s'ouvre sur mobile → la nav reste en bas.
          */
@@ -340,8 +339,7 @@
         .overlay-panel.open { bottom: 0; }
         .panel-header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: bold; }
 
-        /* 
-         * SECTION DE RECHERCHE — isolée du feed vidéo
+        /* * SECTION DE RECHERCHE — isolée du feed vidéo
          * Elle glisse depuis la droite et prend tout l'écran
          */
         .search-full-section {
@@ -380,8 +378,7 @@
         .bg-copy { background: #444; }
         .bg-boost { background: #00f2ea; color: #000 !important; }
 
-        /* 
-         * FIX 1 — GRILLE RÉSULTATS VIDÉO (style TikTok)
+        /* * FIX 1 — GRILLE RÉSULTATS VIDÉO (style TikTok)
          * Fond distinguable, miniature image visible, nom du produit affiché
          */
         .video-search-results {
@@ -546,7 +543,6 @@
                     <source src="{{ p.video_url }}" type="video/mp4">
                 </video>
 
-                <!-- Spinner affiché pendant le buffering réseau -->
                 <div class="video-buffer-spinner"></div>
 
                 <div class="volume-control" onclick="toggleMuteGlobal(event)">
@@ -679,9 +675,6 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- SECTION RECHERCHE VIDÉO — ISOLÉE DU FEED (style TikTok)     -->
-        <!-- ============================================================ -->
         <div id="full-search-section" class="search-full-section">
             <div class="search-header-bar">
                 <div class="back-btn" onclick="closeFullSearch()">
@@ -703,8 +696,6 @@
             </div>
             <div id="video-results-grid" class="video-search-results"></div>
         </div>
-        <!-- ============================================================ -->
-
         <nav class="nav-aura">
             <a href="/" class="nav-link"><span class="emoji">🏠</span>Accueil</a>
             <a href="/categories" class="nav-link"><span class="emoji">🍔</span>Rayons</a>
@@ -977,6 +968,7 @@
             loadComments(prodId);
         }
 
+        // --- CHARGEMENT DES COMMENTAIRES AVEC AVATAR (Style TikTok) ---
         function loadComments(prodId) {
             const container = document.getElementById('comment-list-container');
             container.innerHTML = '<p style="text-align:center;color:#666;">Chargement...</p>';
@@ -988,8 +980,25 @@
                 else {
                     data.forEach(c => {
                         const div = document.createElement('div');
-                        div.style.marginBottom = "10px";
-                        div.innerHTML = `<b style="color:#ff2d55;">${c.author}</b><br><span style="color:#fff;">${c.content}</span>`;
+                        div.style.display = "flex";
+                        div.style.gap = "12px";
+                        div.style.marginBottom = "15px";
+                        div.style.alignItems = "flex-start";
+
+                        // Création de l'initiale au cas où il n'y a pas d'image
+                        const initial = c.author ? c.author.trim()[0].toUpperCase() : '?';
+                        
+                        // Si ton API envoie une URL d'image dans c.avatar_url, utilise-la.
+                        // Sinon, la pastille avec l'initiale s'affichera à la place.
+                        div.innerHTML = `
+                            <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: #334155; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; font-weight: bold; font-size: 14px;">
+                                ${c.avatar_url ? `<img src="${c.avatar_url}" style="width:100%; height:100%; object-fit:cover;">` : `<span>${initial}</span>`}
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="color: #888; font-size: 0.8rem; font-weight: 600; margin-bottom: 2px;">${c.author}</div>
+                                <div style="color: #fff; font-size: 0.85rem; line-height: 1.3;">${c.content}</div>
+                            </div>
+                        `;
                         container.appendChild(div);
                     });
                 }
