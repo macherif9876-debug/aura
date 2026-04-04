@@ -33,7 +33,7 @@ from auth_inscription import inscription_bp, init_supabase
 import cloudinary
 import cloudinary.uploader
 
-# Changé à True pour activer l'IA
+# Vision par ordinateur : Cloudinary uniquement
 MODE_IA_ACTIF = True
 
 load_dotenv()
@@ -98,24 +98,37 @@ cloudinary.config(
 
 class MoteurRechercheAura:
     """
-    Moteur de recherche par image avec 2 niveaux :
-      1. Primaire  : HuggingFace CLIP (quand le modèle est réveillé)
-      2. Fallback  : Claude API (Anthropic) — prend le relais instantanément si HF dort (503)
+    Moteur de recherche par image — UNIQUEMENT via Cloudinary AI.
+    Étape 1 : Upload image → Cloudinary détecte les tags automatiquement.
+    Étape 2 : Recherche produits avec ces tags dans Supabase.
+    Étape 3 : Si aucun tag trouvé → fallback recherche par couleurs dominantes.
     """
+
+    # Correspondance couleurs HEX → noms français
+    COULEURS = {
+        'rouge':  ['#ff0000','#cc0000','#dc143c','#b22222','#8b0000','#ff4444'],
+        'rose':   ['#ffc0cb','#ff69b4','#ff1493','#db7093','#ffb6c1'],
+        'orange': ['#ffa500','#ff8c00','#ff4500','#ff6347'],
+        'jaune':  ['#ffff00','#ffd700','#f0e68c','#ffffe0','#fffacd'],
+        'vert':   ['#008000','#00ff00','#228b22','#006400','#32cd32','#90ee90'],
+        'bleu':   ['#0000ff','#000080','#00008b','#4169e1','#1e90ff','#87ceeb'],
+        'violet': ['#800080','#9400d3','#4b0082','#8a2be2','#ee82ee'],
+        'marron': ['#a52a2a','#8b4513','#d2691e','#cd853f','#c4a35a'],
+        'noir':   ['#000000','#1a1a1a','#2d2d2d','#333333'],
+        'blanc':  ['#ffffff','#f5f5f5','#fffafa','#f8f8f8'],
+        'gris':   ['#808080','#a9a9a9','#d3d3d3','#c0c0c0','#696969'],
+        'beige':  ['#f5f5dc','#ffe4c4','#ffdead','#f5deb3'],
+        'or':     ['#ffd700','#cfb53b','#b8860b'],
+        'argent': ['#c0c0c0','#a8a9ad','#b0b0b0'],
+    }
+
     def __init__(self):
-        self.produits_map  = []
-        self.hf_api_key    = os.getenv("HUGGINGFACE_API_KEY", "")
-        self.claude_key    = os.getenv("ANTHROPIC_API_KEY", "")
-        self.hf_url        = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
+        self.produits_map = []
 
     def indexer_tout_le_catalogue(self):
-        hf_ok     = "✅" if self.hf_api_key    else "❌ manquante"
-        claude_ok = "✅" if self.claude_key     else "❌ manquante"
-        print(f"🔍 [VISION] HuggingFace API : {hf_ok} | Claude API : {claude_ok}")
+        cld_ok = "✅" if os.getenv("CLOUDINARY_API_KEY") else "❌ manquante"
+        print(f"🔍 [CLOUDINARY VISION] Clé Cloudinary : {cld_ok}")
 
-    # ------------------------------------------------------------------
-    # 🔵 MÉTHODE PRINCIPALE
-    # ------------------------------------------------------------------
     def recherche_intelligente(self, query_text=None, query_image_file=None, top_k=20):
         if query_image_file:
             return self._recherche_par_image(query_image_file, top_k)
@@ -124,172 +137,108 @@ class MoteurRechercheAura:
         return []
 
     # ------------------------------------------------------------------
-    # 🖼️ RECHERCHE PAR IMAGE — HuggingFace CLIP puis Claude en fallback
+    # 🖼️ RECHERCHE PAR IMAGE — Cloudinary AI tagging
     # ------------------------------------------------------------------
     def _recherche_par_image(self, image_file, top_k=20):
-        image_file.seek(0)
-        img_data   = image_file.read()
-        img_base64 = base64.b64encode(img_data).decode('utf-8')
-
-        # Charger les produits une seule fois
         try:
-            res_db   = supabase.table('produits').select('id, nom, description').execute()
-            produits = res_db.data or []
-            if not produits:
-                logging.warning("[VISION] Aucun produit en base.")
-                return []
-        except Exception as e:
-            logging.error(f"[VISION] Erreur chargement produits : {e}")
-            return []
+            image_file.seek(0)
+            logging.info("[CLOUDINARY VISION] 📤 Upload image pour analyse...")
 
-        # ── ÉTAPE 1 : Essai HuggingFace CLIP ──────────────────────────
-        if self.hf_api_key:
-            ids = self._hf_clip(img_base64, img_data, produits, top_k)
-            if ids is not None:          # None = modèle endormi → passer au fallback
-                return ids
-            logging.info("[VISION] HuggingFace endormi → bascule sur Claude API")
-        else:
-            logging.info("[VISION] Pas de clé HuggingFace → utilisation directe de Claude API")
-
-        # ── ÉTAPE 2 : Fallback Claude API ─────────────────────────────
-        if self.claude_key:
-            return self._claude_vision(img_base64, produits, top_k)
-
-        logging.error("[VISION] ❌ Aucun moteur IA disponible (clés HUGGINGFACE_API_KEY et ANTHROPIC_API_KEY manquantes)")
-        return []
-
-    # ------------------------------------------------------------------
-    # 🤗 HuggingFace CLIP
-    # Retourne : liste d'IDs si succès | None si modèle endormi (503)
-    # ------------------------------------------------------------------
-    def _hf_clip(self, img_base64, img_data, produits, top_k):
-        headers         = {"Authorization": f"Bearer {self.hf_api_key}"}
-        textes_candidats = [f"{p['nom']} {p.get('description','') or ''}".strip() for p in produits]
-        payload = {
-            "inputs": {
-                "image": img_base64,
-                "candidate_labels": textes_candidats[:100]
-            }
-        }
-        try:
-            resp = requests.post(self.hf_url, headers=headers, json=payload, timeout=25)
-        except requests.exceptions.RequestException as e:
-            logging.warning(f"[HF] Erreur réseau : {e}")
-            return None   # Pas de connexion → fallback
-
-        if resp.status_code == 503:
-            logging.info("[HF] Modèle en cours de chargement (503) → fallback Claude")
-            return None   # Modèle endormi → fallback
-
-        if resp.status_code != 200:
-            logging.error(f"[HF] Statut inattendu : {resp.status_code}")
-            return None   # Erreur → fallback
-
-        try:
-            resultats    = resp.json()
-            labels_scores = {item.get('label'): item.get('score', 0) for item in resultats} if isinstance(resultats, list) else {}
-            scored = [(p['id'], labels_scores.get(textes_candidats[i], 0)) for i, p in enumerate(produits[:100]) if labels_scores.get(textes_candidats[i], 0) > 0.08]
-            scored.sort(key=lambda x: x[1], reverse=True)
-            ids = [s[0] for s in scored[:top_k]]
-            logging.info(f"[HF CLIP] ✅ {len(ids)} résultats trouvés")
-            return ids
-        except Exception as e:
-            logging.error(f"[HF] Erreur parsing réponse : {e}")
-            return None
-
-    # ------------------------------------------------------------------
-    # 🤖 Claude API Vision (Anthropic) — fallback
-    # ------------------------------------------------------------------
-    def _claude_vision(self, img_base64, produits, top_k):
-        logging.info("[CLAUDE] 🔍 Analyse d'image via Claude API...")
-        try:
-            # Détecter le type MIME depuis le base64
-            media_type = "image/jpeg"  # par défaut
-
-            resp = requests.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key":         self.claude_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type":      "application/json"
-                },
-                json={
-                    "model":      "claude-haiku-4-5-20251001",   # modèle rapide et économique
-                    "max_tokens": 200,
-                    "messages": [{
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type":       "base64",
-                                    "media_type": media_type,
-                                    "data":       img_base64
-                                }
-                            },
-                            {
-                                "type": "text",
-                                "text": (
-                                    "Décris ce produit en 5 à 10 mots-clés français séparés par des virgules. "
-                                    "Sois précis : couleur, matière, type de produit, usage. "
-                                    "Réponds UNIQUEMENT avec les mots-clés, sans phrase ni ponctuation finale."
-                                )
-                            }
-                        ]
-                    }]
-                },
-                timeout=20
+            # ── Upload + analyse automatique via Cloudinary ─────────────
+            result = cloudinary.uploader.upload(
+                image_file,
+                categorization  = "google_tagging",  # IA Google Vision via Cloudinary
+                auto_tagging    = 0.5,               # seuil de confiance minimum
+                colors          = True,               # extraire les couleurs dominantes
+                resource_type   = "image",
+                folder          = "aura_recherche_temp",
+                overwrite       = True
             )
 
-            if resp.status_code != 200:
-                logging.error(f"[CLAUDE] Erreur API : {resp.status_code} — {resp.text[:200]}")
-                return []
+            # ── Extraire les tags IA ─────────────────────────────────────
+            tags_ia = result.get('tags', [])
 
-            data = resp.json()
-            # Extraire le texte de la réponse
-            texte_brut = ""
-            for block in data.get("content", []):
-                if block.get("type") == "text":
-                    texte_brut = block.get("text", "")
-                    break
+            # Tags depuis la catégorisation Google
+            info         = result.get('info', {})
+            cat_data     = (info.get('categorization', {})
+                               .get('google_tagging', {})
+                               .get('data', []))
+            tags_google  = [c.get('tag', '') for c in cat_data
+                            if c.get('confidence', 0) >= 0.5]
 
-            if not texte_brut:
-                logging.warning("[CLAUDE] Réponse vide")
-                return []
+            # ── Extraire les couleurs dominantes ─────────────────────────
+            colors_raw   = result.get('colors', [])
+            noms_couleurs = self._hex_vers_noms(colors_raw)
 
-            logging.info(f"[CLAUDE] ✅ Mots-clés extraits : {texte_brut[:100]}")
+            # ── Fusionner tous les mots-clés ─────────────────────────────
+            tous_mots = list(dict.fromkeys(
+                [t.lower() for t in tags_ia + tags_google] + noms_couleurs
+            ))
 
-            # Rechercher ces mots-clés dans la base de données
-            mots_cles = [m.strip().lower() for m in texte_brut.split(',') if m.strip()]
-            ids_trouves = set()
+            logging.info(f"[CLOUDINARY VISION] ✅ Mots-clés détectés : {tous_mots[:12]}")
 
-            for mot in mots_cles[:6]:   # Max 6 mots-clés pour ne pas surcharger
-                try:
-                    res = supabase.table('produits').select('id').or_(
-                        f"nom.ilike.%{mot}%,description.ilike.%{mot}%,categorie.ilike.%{mot}%"
-                    ).execute()
-                    for p in (res.data or []):
-                        ids_trouves.add(p['id'])
-                except Exception as eq:
-                    logging.warning(f"[CLAUDE] Erreur query '{mot}': {eq}")
-                    continue
+            # ── Chercher les produits correspondants ─────────────────────
+            if tous_mots:
+                ids = self._chercher_par_mots_cles(tous_mots, top_k)
+                if ids:
+                    return ids
 
-            ids_liste = list(ids_trouves)[:top_k]
-            logging.info(f"[CLAUDE] {len(ids_liste)} produits trouvés via mots-clés")
-            return ids_liste
+            # ── Fallback : retourner les produits les plus récents ────────
+            logging.warning("[CLOUDINARY VISION] Aucune correspondance → retour produits récents")
+            res = supabase.table('produits').select('id').order('created_at', desc=True).limit(top_k).execute()
+            return [p['id'] for p in (res.data or [])]
 
         except Exception as e:
-            logging.error(f"[CLAUDE] ❌ Erreur : {e}")
-            traceback.print_exc()
-            return []
+            logging.error(f"[CLOUDINARY VISION] ❌ Erreur : {e}")
+            # Fallback ultime : retourner les produits récents
+            try:
+                res = supabase.table('produits').select('id').order('created_at', desc=True).limit(top_k).execute()
+                return [p['id'] for p in (res.data or [])]
+            except:
+                return []
 
     # ------------------------------------------------------------------
-    # 📝 RECHERCHE PAR TEXTE (inchangée, rapide)
+    # 🎨 Conversion HEX → noms de couleurs français
+    # ------------------------------------------------------------------
+    def _hex_vers_noms(self, colors_raw):
+        noms = []
+        for item in colors_raw[:4]:  # 4 couleurs dominantes max
+            hex_color = (item[0] if isinstance(item, list) else str(item)).lower().strip()
+            for nom, hexlist in self.COULEURS.items():
+                if hex_color in hexlist:
+                    noms.append(nom)
+                    break
+        return noms
+
+    # ------------------------------------------------------------------
+    # 🔎 Recherche produits par mots-clés dans Supabase
+    # ------------------------------------------------------------------
+    def _chercher_par_mots_cles(self, keywords, top_k=20):
+        ids = set()
+        for mot in keywords[:10]:
+            if not mot or len(mot) < 2:
+                continue
+            try:
+                res = supabase.table('produits').select('id').or_(
+                    f"nom.ilike.%{mot}%,"
+                    f"description.ilike.%{mot}%,"
+                    f"categorie.ilike.%{mot}%"
+                ).execute()
+                for p in (res.data or []):
+                    ids.add(p['id'])
+            except Exception as e:
+                logging.warning(f"[VISION] Erreur query '{mot}': {e}")
+        return list(ids)[:top_k]
+
+    # ------------------------------------------------------------------
+    # 📝 Recherche par texte
     # ------------------------------------------------------------------
     def _recherche_par_texte(self, query_text, top_k=20):
         try:
             res = supabase.table('produits').select('id').or_(
-                f"nom.ilike.%{query_text}%,description.ilike.%{query_text}%,categorie.ilike.%{query_text}%"
+                f"nom.ilike.%{query_text}%,"
+                f"description.ilike.%{query_text}%,"
+                f"categorie.ilike.%{query_text}%"
             ).execute()
             return [p['id'] for p in (res.data or [])][:top_k]
         except Exception as e:
@@ -452,11 +401,10 @@ def recherche_page():
                 if ids_trouves:
                     res = supabase.table('produits').select('*').in_('id', ids_trouves).execute()
                     produits_trouves = res.data or []
-                if not produits_trouves:
-                    erreur_image = "Aucun produit similaire trouvé. Essayez avec une autre photo ou une recherche par texte."
+                # Pas de message d'erreur si aucun résultat — c'est normal
             except Exception as e:
                 logging.error(f"[RECHERCHE IMAGE] Erreur : {e}")
-                erreur_image = "Erreur lors de l'analyse de l'image. Réessayez dans quelques secondes."
+                erreur_image = "Analyse impossible. Réessayez avec une autre photo."
         else:
             erreur_image = "Aucune image reçue."
 
