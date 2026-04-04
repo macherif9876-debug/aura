@@ -122,10 +122,38 @@ class MoteurRechercheAura:
                 img_data = query_image_file.read()
 
                 headers = {"Authorization": f"Bearer {self.hf_api_key}"}
-                response = requests.post(self.api_url, headers=headers, data=img_data, timeout=30)
                 
+                # --- CORRECTIF APPLIQUÉ ICI ---
+                # Ajout d'une boucle de tentatives pour éviter les lectures incomplètes (IncompleteRead)
+                max_retries = 3
+                response = None
+                
+                for attempt in range(max_retries):
+                    try:
+                        response = requests.post(self.api_url, headers=headers, data=img_data, timeout=30)
+                        
+                        # Si l'API nous dit que le modèle est en train de charger
+                        if response.status_code == 503:
+                            logging.info(f"[IA] Modèle en cours de chargement, attente de 5s... (Tentative {attempt + 1}/{max_retries})")
+                            time.sleep(5)
+                            continue
+                            
+                        # Si tout est OK, on sort de la boucle
+                        if response.status_code == 200:
+                            break
+                            
+                    except (requests.exceptions.ChunkedEncodingError, requests.exceptions.ConnectionError) as ce:
+                        logging.warning(f"[IA] Problème de flux ou coupure réseau ({ce}). Nouvelle tentative dans 3s...")
+                        time.sleep(3)
+                        continue
+                
+                # Vérifications finales après les tentatives
+                if not response:
+                    logging.error("[IA] Échec total de la requête à Hugging Face.")
+                    return []
+                    
                 if response.status_code != 200:
-                    logging.error(f"[IA] Erreur Hugging Face : {response.text}")
+                    logging.error(f"[IA] Erreur Hugging Face ({response.status_code}) : {response.text}")
                     return []
                 
                 resultats_ia = response.json()
@@ -155,6 +183,7 @@ class MoteurRechercheAura:
                 
             except Exception as e:
                 logging.error(f"[IA] Erreur traitement vision : {e}")
+                traceback.print_exc()
                 return []
 
         # Cas 2 : Recherche par Texte simple
