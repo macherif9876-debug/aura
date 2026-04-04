@@ -33,7 +33,8 @@ from auth_inscription import inscription_bp, init_supabase
 import cloudinary
 import cloudinary.uploader
 
-MODE_IA_ACTIF = False
+# Changé à True pour activer l'IA
+MODE_IA_ACTIF = True
 
 load_dotenv()
 
@@ -98,12 +99,74 @@ cloudinary.config(
 class MoteurRechercheAura:
     def __init__(self):
         self.produits_map = []  
+        # Récupération de la clé API Hugging Face depuis les secrets Replit
+        self.hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
+        # URL du modèle de détection d'objets
+        self.api_url = "https://api-inference.huggingface.co/models/facebook/detr-resnet-50"
 
     def indexer_tout_le_catalogue(self):
-        print("📊 [IA] Mode IA désactivé.")
+        print("📊 [IA] Mode IA activé pour Hugging Face.")
         return
 
     def recherche_intelligente(self, query_text=None, query_image_file=None, top_k=20):
+        """Recherche par texte ou par vision par ordinateur via Hugging Face."""
+        if not MODE_IA_ACTIF or not self.hf_api_key:
+            logging.warning("[IA] Recherche intelligente désactivée ou clé API manquante.")
+            return []
+
+        # Cas 1 : Recherche par Image (Vision par ordinateur)
+        if query_image_file:
+            try:
+                logging.info("[IA] Envoi de l'image à Hugging Face...")
+                query_image_file.seek(0)
+                img_data = query_image_file.read()
+
+                headers = {"Authorization": f"Bearer {self.hf_api_key}"}
+                response = requests.post(self.api_url, headers=headers, data=img_data, timeout=30)
+                
+                if response.status_code != 200:
+                    logging.error(f"[IA] Erreur Hugging Face : {response.text}")
+                    return []
+                
+                resultats_ia = response.json()
+                mots_cles = []
+                
+                # On extrait les objets détectés par l'IA
+                if isinstance(resultats_ia, list):
+                    for item in resultats_ia:
+                        label = item.get('label')
+                        score = item.get('score', 0)
+                        if label and score > 0.5: # On ne garde que ce dont l'IA est sûre à plus de 50%
+                            mots_cles.append(label)
+                
+                logging.info(f"[IA] Objets détectés : {mots_cles}")
+                
+                if not mots_cles:
+                    return []
+                
+                # On cherche en BDD les produits qui contiennent ces mots-clés dans leur nom ou description
+                ids_trouves = []
+                for mot in mots_cles:
+                    res_db = supabase.table('produits').select('id').or_(f"nom.ilike.%{mot}%,description.ilike.%{mot}%").execute()
+                    if res_db.data:
+                        ids_trouves.extend([p['id'] for p in res_db.data])
+                
+                return list(set(ids_trouves))[:top_k]
+                
+            except Exception as e:
+                logging.error(f"[IA] Erreur traitement vision : {e}")
+                return []
+
+        # Cas 2 : Recherche par Texte simple
+        elif query_text:
+            try:
+                res_db = supabase.table('produits').select('id').ilike('nom', f"%{query_text}%").execute()
+                if res_db.data:
+                    return [p['id'] for p in res_db.data][:top_k]
+            except Exception as e:
+                logging.error(f"[IA] Erreur recherche texte : {e}")
+                return []
+
         return []
 
 moteur_ia = MoteurRechercheAura()
@@ -161,11 +224,9 @@ def upload_to_github(file_storage):
         logging.error(f"Erreur GitHub: {e}")
         return None
 
-# ✅ FIX 1 : designer_automatique_ia — Cloudinary avec détourage AI, retourne une URL
 def designer_automatique_ia(file_storage):
     """Upload image sur Cloudinary avec suppression arrière-plan AI.
     Retourne l'URL Cloudinary (string), pas un fichier."""
-    # Tentative 1 : avec détourage Cloudinary AI
     try:
         file_storage.seek(0)
         result = cloudinary.uploader.upload(
@@ -180,7 +241,6 @@ def designer_automatique_ia(file_storage):
     except Exception as e:
         logging.warning(f"[CLOUDINARY] Détourage AI non disponible ({e}), upload simple...")
 
-    # Tentative 2 : upload simple sans détourage
     try:
         file_storage.seek(0)
         result = cloudinary.uploader.upload(file_storage, resource_type="image")
@@ -450,7 +510,6 @@ def upload_photo_profil():
         extension = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
         filename  = f"avatar_{user_id}.{extension}"
         private_key = os.getenv("IMAGEKIT_PRIVATE_KEY", "")
-        # ✅ URL ImageKit corrigée
         upload_response = requests.post(
             "https://upload.imagekit.io/api/v1/files/upload",
             auth=(private_key, ""),   
@@ -639,7 +698,6 @@ def delete_user(user_id):
     except Exception as e: flash(f"Erreur : {e}", "error")
     return redirect(url_for('admin_dashboard'))
 
-# ✅ FIX 2 : upload_banners — Cloudinary au lieu de Supabase Storage (bucket introuvable)
 @app.route('/admin/upload_banners', methods=['POST'])
 @admin_access_required
 def upload_banners():
@@ -649,7 +707,6 @@ def upload_banners():
         try:
             position = index + 1
             file.seek(0)
-            # ✅ Upload vers Cloudinary (pas Supabase Storage)
             result = cloudinary.uploader.upload(
                 file,
                 folder="aura_banners",
@@ -719,12 +776,10 @@ def inscription_commercant():
     except Exception as e:
         return f"Erreur : {e}"
 
-# ✅ FIX 3 : merchant_dashboard — stats corrigées avec gestion d'erreur détaillée
 @app.route('/merchant/dashboard')
 @merchant_required
 def merchant_dashboard():
     user_id = session.get('user_id')
-    # Statuts considérés comme "livrés"
     STATUTS_LIVRES = ['livré', 'livree', 'livre', 'livré(e)', 'delivered']
     try:
         produits   = supabase.table('produits').select('*').eq('id_commercant', user_id).order('created_at', desc=True).execute().data or []
@@ -744,7 +799,6 @@ def merchant_dashboard():
                 "statut":           o.get('statut', 'en_attente')
             })
 
-        # ✅ Stats corrigées
         total_ca           = sum(float(o.get('prix_total', 0) or 0) for o in res_orders if o.get('statut') in STATUTS_LIVRES)
         non_livres_count   = len([o for o in res_orders if o.get('statut') not in STATUTS_LIVRES])
         stock_restant      = sum(int(p.get('stock', 0) or 0) for p in produits)
@@ -775,7 +829,6 @@ def merchant_dashboard():
             commandes_reelles=[], categories=CATEGORIES_LIST
         )
 
-# ✅ FIX 4 : add_product — utilise l'URL retournée par designer_automatique_ia
 @app.route('/merchant/add_product', methods=['POST'])
 @merchant_required
 def add_product():
@@ -784,7 +837,6 @@ def add_product():
 
         file = request.files.get('image_produit')
         if file and file.filename != '':
-            # ✅ designer_automatique_ia retourne directement une URL Cloudinary
             image_url = designer_automatique_ia(file) or ""
 
         v_file = request.files.get('video_produit')
@@ -819,7 +871,6 @@ def add_product():
 
             for d_file in request.files.getlist('images_details'):
                 if d_file and d_file.filename != '':
-                    # ✅ Même fix ici
                     detail_url = designer_automatique_ia(d_file)
                     if detail_url:
                         supabase.table('images_details').insert({"id_produit": new_id, "image_url": detail_url}).execute()
@@ -884,7 +935,6 @@ def delete_product(prod_id):
 def galerie_videos():
     query = request.args.get('q', '').strip()
     liste_produits = []
-    # ✅ FIX : ajout de variantes(*) pour que couleurs/tailles s'affichent dans "Voir plus"
     SELECT_VIDEOS = '*, profil!id_commercant(nom_boutique, photo_url), variantes(*)'
     try:
         if query:
@@ -976,7 +1026,6 @@ def handle_comments(prod_id):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
     try:
-        # ✅ FIX : ajout photo_url pour afficher l'avatar dans les commentaires (style TikTok)
         res = supabase.table('commentaire_produit').select('commentaire_texte, created_at, profil(nom, prenom, photo_url)').eq('produit_id', prod_id).order('created_at', desc=True).execute()
         formatted_comments = []
         for c in res.data:
